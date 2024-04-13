@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <title>Select Sub-Image with Canvas</title>
     <style>
@@ -8,14 +9,32 @@
         }
     </style>
 </head>
+
 <body>
     <canvas id="canvas"></canvas>
+    <label>
+        <input type="checkbox" id="histogramToggle" onchange="computeHistogram(this.checked)">
+        Toggle Color Histogram
+    </label>
+    <div id="histogram"></div>
+    <div style="display: flex; flex-direction: column;">
+        <div id="histogramr"></div>
+        <div id="histogramg"></div>
+        <div id="histogramb"></div>
+    </div>
     <script>
+        let imageData;
+        let showColorHistogram;
+
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
+        const histogramElement = document.getElementById('histogram');
+        const histogramElementR = document.getElementById('histogramr');
+        const histogramElementG = document.getElementById('histogramg');
+        const histogramElementB = document.getElementById('histogramb');
         const img = new Image();
         img.src = 'castle1.png'; // Replace with the path to your image
-        img.onload = function() {
+        img.onload = function () {
             canvas.width = img.width;
             canvas.height = img.height;
             ctx.drawImage(img, 0, 0);
@@ -23,13 +42,13 @@
 
         let startX, startY, isDragging = false;
 
-        canvas.onmousedown = function(e) {
+        canvas.onmousedown = function (e) {
             startX = e.offsetX;
             startY = e.offsetY;
             isDragging = true;
         };
 
-        canvas.onmousemove = function(e) {
+        canvas.onmousemove = function (e) {
             if (isDragging) {
                 const mouseX = e.offsetX;
                 const mouseY = e.offsetY;
@@ -44,11 +63,165 @@
             }
         };
 
-        canvas.onmouseup = function(e) {
+        canvas.onmouseup = function (e) {
             isDragging = false;
-            // Optionally, handle the selected area here
-            // For example, you can extract and display the selected sub-image
+            const width = e.offsetX - startX;
+            const height = e.offsetY - startY;
+            createHistogram(startX, startY, width, height);
         };
+
+        function createHistogram(x, y, width, height) {
+            imageData = ctx.getImageData(x, y, width, height);
+            computeHistogram(null);
+        }
+
+        function computeHistogram(isColor = false) {
+            if(isColor !== null && isColor !== undefined) {
+                showColorHistogram = isColor;
+            }
+
+            if (!imageData) {
+                return;
+            }
+
+            const data = imageData.data;
+
+            if (!showColorHistogram) {
+                let luminanceHistogram = new Array(256).fill(0);
+
+                for (let i = 0; i < data.length; i += 4) {
+                    const r = data[i];
+                    const g = data[i + 1];
+                    const b = data[i + 2];
+                    const luminance = 0.299 * r + 0.587 * g + 0.114 * b;
+                    luminanceHistogram[Math.floor(luminance)]++;
+                }
+
+                displayHistogram(luminanceHistogram);
+            } else {
+                let luminanceHistogramR = new Array(256).fill(0);
+                let luminanceHistogramG = new Array(256).fill(0);
+                let luminanceHistogramB = new Array(256).fill(0);
+
+                for (let i = 0; i < data.length; i += 4) {
+                    const r = data[i];
+                    const g = data[i + 1];
+                    const b = data[i + 2];
+                    luminanceHistogramR[r]++;
+                    luminanceHistogramG[g]++;
+                    luminanceHistogramB[b]++;
+                }
+
+                displayColorHistogram(luminanceHistogramR, luminanceHistogramG, luminanceHistogramB);
+            }
+        }
+
+        function displayHistogram(histogram) {
+            histogramElement.innerHTML = '';
+            histogramElementR.innerHTML = '';
+            histogramElementG.innerHTML = '';
+            histogramElementB.innerHTML = '';
+
+            histogramElement.style.height = '100px';
+            histogramElement.style.width = 'max(50%, 500px)';
+
+            histogramElementR.style.height = '';
+            histogramElementR.style.width = '';
+
+            histogramElementG.style.height = '';
+            histogramElementG.style.width = '';
+
+            histogramElementB.style.height = '';
+            histogramElementB.style.width = '';
+
+            // Use setTimeout to ensure the style is applied and rendered
+            setTimeout(() => {
+                // Get the computed style of the element
+                const computedStyle = window.getComputedStyle(histogramElement);
+                // Access the width property, which gives the final computed width in pixels
+                let computedWidth = computedStyle.width;
+
+                if (computedWidth.includes('px')) {
+                    computedWidth = computedWidth.replace('px', '');
+                }
+
+                computedWidth = Number(computedWidth);
+
+                const maxCount = Math.max(...histogram);
+                histogram.forEach((count, i) => {
+                    const bar = document.createElement('div');
+                    bar.style.width = `${computedWidth / 255}px`;
+                    bar.style.height = `${(count / maxCount) * 100}%`;
+                    bar.style.backgroundColor = 'black';
+                    bar.style.display = 'inline-block';
+                    histogramElement.appendChild(bar);
+                });
+            }, 0);
+        }
+
+        function displayColorHistogram(histogramR, histogramG, histogramB) {
+            histogramElement.innerHTML = '';
+            histogramElementR.innerHTML = '';
+            histogramElementG.innerHTML = '';
+            histogramElementB.innerHTML = '';
+
+            histogramElement.style.height = '';
+            histogramElement.style.width = '';
+
+            histogramElementR.style.height = '100px';
+            histogramElementR.style.width = 'max(50%, 500px)';
+
+            histogramElementG.style.height = '100px';
+            histogramElementG.style.width = 'max(50%, 500px)';
+
+            histogramElementB.style.height = '100px';
+            histogramElementB.style.width = 'max(50%, 500px)';
+
+            // Use setTimeout to ensure the style is applied and rendered
+            setTimeout(() => {
+                // Get the computed style of the element
+                const computedStyle = window.getComputedStyle(histogramElementR);
+                // Access the width property, which gives the final computed width in pixels
+                let computedWidth = computedStyle.width;
+
+                if (computedWidth.includes('px')) {
+                    computedWidth = computedWidth.replace('px', '');
+                }
+
+                computedWidth = Number(computedWidth);
+
+                const maxCountR = Math.max(...histogramR);
+                histogramR.forEach((count, i) => {
+                    const bar = document.createElement('div');
+                    bar.style.width = `${computedWidth / 255}px`;
+                    bar.style.height = `${(count / maxCountR) * 100}%`;
+                    bar.style.backgroundColor = 'red';
+                    bar.style.display = 'inline-block';
+                    histogramElementR.appendChild(bar);
+                });
+
+                const maxCountG = Math.max(...histogramG);
+                histogramG.forEach((count, i) => {
+                    const bar = document.createElement('div');
+                    bar.style.width = `${computedWidth / 255}px`;
+                    bar.style.height = `${(count / maxCountG) * 100}%`;
+                    bar.style.backgroundColor = 'green';
+                    bar.style.display = 'inline-block';
+                    histogramElementG.appendChild(bar);
+                });
+
+                const maxCountB = Math.max(...histogramB);
+                histogramB.forEach((count, i) => {
+                    const bar = document.createElement('div');
+                    bar.style.width = `${computedWidth / 255}px`;
+                    bar.style.height = `${(count / maxCountB) * 100}%`;
+                    bar.style.backgroundColor = 'blue';
+                    bar.style.display = 'inline-block';
+                    histogramElementB.appendChild(bar);
+                });
+            }, 0);
+        }
     </script>
 </body>
+
 </html>
