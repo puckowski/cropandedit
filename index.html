@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Select Sub-Image with Canvas</title>
+    <style>
+        canvas {
+            border: 1px solid black;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const img = new Image();
+        img.src = 'castle1.png'; // Replace with the path to your image
+        img.onload = function() {
+            canvas.width = img.width;
+            canvas.height = img.height;
+            ctx.drawImage(img, 0, 0);
+        };
+
+        let startX, startY, isDragging = false;
+
+        canvas.onmousedown = function(e) {
+            startX = e.offsetX;
+            startY = e.offsetY;
+            isDragging = true;
+        };
+
+        canvas.onmousemove = function(e) {
+            if (isDragging) {
+                const mouseX = e.offsetX;
+                const mouseY = e.offsetY;
+                const width = mouseX - startX;
+                const height = mouseY - startY;
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(img, 0, 0);
+                ctx.beginPath();
+                ctx.rect(startX, startY, width, height);
+                ctx.strokeStyle = 'red';
+                ctx.stroke();
+            }
+        };
+
+        canvas.onmouseup = function(e) {
+            isDragging = false;
+            // Optionally, handle the selected area here
+            // For example, you can extract and display the selected sub-image
+        };
+    </script>
+</body>
+</html>
