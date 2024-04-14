@@ -626,7 +626,7 @@
                 reader.readAsDataURL(file);  // Read the file as Data URL
             }
         });
-        
+
         let isFlippedHorizontally = false;
         let isFlippedVertically = false;
 
@@ -791,9 +791,7 @@
         };
 
         function createHistogram(x, y, width, height) {
-            if (!imageData) {
-                return;
-            } else if (width === 0 || height === 0) {
+            if (width === 0 || height === 0) {
                 return;
             }
 
