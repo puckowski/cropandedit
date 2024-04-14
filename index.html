@@ -613,51 +613,46 @@
             ctx.drawImage(img, 0, 0);
         };
 
-        let isFlippedHorizontally = false;  // This variable will track the flip state of the image
+        let isFlippedHorizontally = false;
+        let isFlippedVertically = false;
 
-        function flipImageHorizontally() {
-            // Clear the canvas
+        function applyTransformations() {
+            // Clear the canvas first
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            if (!isFlippedHorizontally) {
-                // Move to the right side of the canvas and flip horizontally
+            // Reset transformations to default
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+
+            // Apply horizontal flip if needed
+            if (isFlippedHorizontally) {
                 ctx.translate(canvas.width, 0);
                 ctx.scale(-1, 1);
-                isFlippedHorizontally = true;  // Update the state
-            } else {
-                // Reset transformations if already flipped (normal mode)
-                ctx.setTransform(1, 0, 0, 1, 0, 0);
-                isFlippedHorizontally = false;  // Update the state
             }
 
-            // Redraw the image in the new state
-            ctx.drawImage(img, 0, 0);
+            // Apply vertical flip if needed
+            if (isFlippedVertically) {
+                ctx.translate(0, canvas.height);
+                ctx.scale(1, -1);
+            }
 
-            // Reset transformations to avoid accumulation of transformations
-            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            // Redraw the image with current transformations
+            ctx.drawImage(img, 0, 0);
+        }
+
+        function flipImageHorizontally() {
+            // Toggle the horizontal flip state
+            isFlippedHorizontally = !isFlippedHorizontally;
+            applyTransformations(); // Apply the current transformations
+        }
+
+        function flipImageVertically() {
+            // Toggle the vertical flip state
+            isFlippedVertically = !isFlippedVertically;
+            applyTransformations(); // Apply the current transformations
         }
 
         document.getElementById('flipButtonHorizontal').addEventListener('click', flipImageHorizontally);
-
-        let isFlipped = false; // Variable to track the flipped state
-
-        // Function to flip the image vertically
-        function flipVertical() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear the canvas
-            ctx.save(); // Save the current state
-            if (!isFlipped) {
-                ctx.scale(1, -1); // Flip the image vertically
-                ctx.drawImage(img, 0, -canvas.height); // Draw the flipped image
-            } else {
-                ctx.drawImage(img, 0, 0); // Draw the normal image
-            }
-            isFlipped = !isFlipped; // Toggle the flipped state
-            ctx.drawImage(img, 0, -canvas.height); // Draw the image flipped
-            ctx.restore(); // Restore the original state
-        }
-
-        // Adding event listener to the button
-        document.getElementById('flipButton').addEventListener('click', flipVertical);
+        document.getElementById('flipButton').addEventListener('click', flipImageVertically);
 
         const rotateBtn = document.getElementById('rotateBtn');
         let angle = 0; // Initialize angle of rotation
@@ -692,8 +687,8 @@
             canvas.height = imageData.height;
 
             // Get context of the new canvas and put imageData into it
-            const ctx = canvas.getContext('2d');
-            ctx.putImageData(imageData, 0, 0);
+            const ctxNew = canvas.getContext('2d');
+            ctxNew.putImageData(imageData, 0, 0);
 
             // Convert canvas to data URL and trigger download
             const imageURL = canvas.toDataURL('image/png');
