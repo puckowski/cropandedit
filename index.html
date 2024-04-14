@@ -577,6 +577,8 @@
 
 <body>
     <canvas id="canvas"></canvas>
+    <input type="file" id="fileUploader" style="display: none;" accept="image/*" />
+    <button onclick="document.getElementById('fileUploader').click();">Upload Image</button>
     <label>
         <input type="checkbox" id="histogramToggle" onchange="computeHistogram(this.checked)">
         Toggle Color Histogram
@@ -613,6 +615,18 @@
             ctx.drawImage(img, 0, 0);
         };
 
+        // Set up the file uploader event listener
+        document.getElementById('fileUploader').addEventListener('change', function (event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    img.src = e.target.result;  // Set image source to the file content
+                };
+                reader.readAsDataURL(file);  // Read the file as Data URL
+            }
+        });
+        
         let isFlippedHorizontally = false;
         let isFlippedVertically = false;
 
