@@ -587,7 +587,7 @@
     <button id="darkenButton">Darken Image</button>
     <button id="grayscaleButton">Convert to Grayscale</button>
     <button id="download-btn">Download Image</button>
-    <button id="rotateBtn">Rotate 45°</button>
+    <button id="rotateBtn">Rotate 45 Degrees</button>
     <button id="flipButton">Flip Vertical</button>
     <button id="flipButtonHorizontal">Flip Horizontal</button>
     <button id="contrastButton">Increase Contrast</button>
@@ -608,7 +608,7 @@
         const histogramElementR = document.getElementById('histogramr');
         const histogramElementG = document.getElementById('histogramg');
         const histogramElementB = document.getElementById('histogramb');
-        const img = new Image();
+        let img = new Image();
         img.src = 'castle1.png'; // Replace with the path to your image
         img.onload = function () {
             canvas.width = img.width;
@@ -753,6 +753,7 @@
 
             // Write the grayscale image data back to the canvas
             ctx.putImageData(imageData, 0, 0);
+            img.src = canvas.toDataURL(); // Convert canvas content to a data URL
         });
 
         document.getElementById('lightenButton').addEventListener('click', function () {
@@ -830,6 +831,64 @@
             createHistogram(startX, startY, width, height);
             imageDataSetAfterDrag = true;
         };
+
+        // Touch event handlers
+        canvas.addEventListener('touchstart', function (e) {
+            e.preventDefault(); // Prevent default touch behavior (e.g., scrolling)
+            const touch = e.touches[0]; // Get the first touch point
+            const { mouseX, mouseY } = adjustTouchCoordinates(touch);
+            startX = mouseX;
+            startY = mouseY;
+            isDragging = true;
+        });
+
+        canvas.addEventListener('touchmove', function (e) {
+            e.preventDefault(); // Prevent default touch behavior
+            if (isDragging) {
+                const touch = e.touches[0]; // Get the first touch point
+                const { mouseX, mouseY } = adjustTouchCoordinates(touch);
+                const width = mouseX - startX;
+                const height = mouseY - startY;
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(img, 0, 0);
+                ctx.beginPath();
+                const lineWidth = 2;
+                ctx.rect(startX - lineWidth, startY - lineWidth, width + lineWidth * 2, height + lineWidth * 2);
+                ctx.strokeStyle = 'red';
+                ctx.lineWidth = lineWidth;
+                ctx.stroke();
+            }
+        });
+
+        canvas.addEventListener('touchend', function (e) {
+            e.preventDefault(); // Prevent default touch behavior
+            isDragging = false;
+            const touch = e.changedTouches[0]; // Get the last touch point
+            const { mouseX, mouseY } = adjustTouchCoordinates(touch);
+            const width = mouseX - startX;
+            const height = mouseY - startY;
+            createHistogram(startX, startY, width, height);
+            imageDataSetAfterDrag = true;
+        });
+
+        // Adjust touch coordinates to canvas space
+        function adjustTouchCoordinates(touch) {
+            const rect = canvas.getBoundingClientRect(); // Get canvas bounding box
+            let mouseX = touch.clientX - rect.left;
+            let mouseY = touch.clientY - rect.top;
+
+            // Adjust for horizontal flip
+            if (isFlippedHorizontally) {
+                mouseX = canvas.width - mouseX;
+            }
+
+            // Adjust for vertical flip
+            if (isFlippedVertically) {
+                mouseY = canvas.height - mouseY;
+            }
+
+            return { mouseX, mouseY };
+        }
 
         function createHistogram(x, y, width, height) {
             if (width === 0 || height === 0) {
