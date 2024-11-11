@@ -601,6 +601,8 @@
         let imageData;
         let showColorHistogram;
         let imageDataSetAfterDrag = false;
+        let overlayCanvas;
+        let histCoords;
 
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
@@ -614,6 +616,7 @@
             canvas.width = img.width;
             canvas.height = img.height;
             ctx.drawImage(img, 0, 0);
+            addOverlay();
         };
 
         // Set up the file uploader event listener
@@ -623,6 +626,7 @@
                 const reader = new FileReader();
                 reader.onload = function (e) {
                     img.src = e.target.result;  // Set image source to the file content
+                    addOverlay();
                 };
                 reader.readAsDataURL(file);  // Read the file as Data URL
             }
@@ -652,6 +656,9 @@
 
             // Redraw the image with current transformations
             ctx.drawImage(img, 0, 0);
+            if (histCoords) {
+                createHistogram(histCoords.startX, histCoords.startY, histCoords.width, histCoords.height);
+            }
         }
 
         function flipImageHorizontally() {
@@ -683,6 +690,9 @@
             ctx.rotate(angle * Math.PI / 180); // Convert degrees to radians and rotate
             ctx.drawImage(img, -img.width / 2, -img.height / 2); // Draw the image centered at the origin
             ctx.restore(); // Restore the original state
+            if (histCoords) {
+                createHistogram(histCoords.startX, histCoords.startY, histCoords.width, histCoords.height);
+            }
         });
 
         let startX, startY, isDragging = false;
@@ -735,6 +745,9 @@
 
             // Write the grayscale image data back to the canvas
             ctx.putImageData(imageData, 0, 0);
+            if (histCoords) {
+                createHistogram(histCoords.startX, histCoords.startY, histCoords.width, histCoords.height);
+            }
         });
 
         document.getElementById('grayscaleButton').addEventListener('click', function () {
@@ -754,6 +767,9 @@
             // Write the grayscale image data back to the canvas
             ctx.putImageData(imageData, 0, 0);
             img.src = canvas.toDataURL(); // Convert canvas content to a data URL
+            if (histCoords) {
+                createHistogram(histCoords.startX, histCoords.startY, histCoords.width, histCoords.height);
+            }
         });
 
         document.getElementById('lightenButton').addEventListener('click', function () {
@@ -767,6 +783,9 @@
             }
 
             ctx.putImageData(imageData, 0, 0);
+            if (histCoords) {
+                createHistogram(histCoords.startX, histCoords.startY, histCoords.width, histCoords.height);
+            }
         });
 
         document.getElementById('darkenButton').addEventListener('click', function () {
@@ -781,6 +800,9 @@
             }
 
             ctx.putImageData(imageData, 0, 0);
+            if (histCoords) {
+                createHistogram(histCoords.startX, histCoords.startY, histCoords.width, histCoords.height);
+            }
         });
 
         canvas.onmousedown = function (e) {
@@ -807,30 +829,83 @@
             return { mouseX, mouseY };
         }
 
-        canvas.onmousemove = function (e) {
-            if (isDragging) {
-                let { mouseX, mouseY } = adjustMouseCoordinates(e);
-                const width = mouseX - startX;
-                const height = mouseY - startY;
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-                ctx.drawImage(img, 0, 0);
-                ctx.beginPath();
-                const lineWidth = 2;
-                ctx.rect(startX - lineWidth, startY - lineWidth, width + (lineWidth * 2), height + (lineWidth * 2));
-                ctx.strokeStyle = 'red';
-                ctx.lineWidth = lineWidth;
-                ctx.stroke();
+        function addOverlay() {
+            if (overlayCanvas && document.body.contains(overlayCanvas)) {
+                document.body.removeChild(overlayCanvas);
             }
-        };
 
-        canvas.onmouseup = function (e) {
-            isDragging = false;
-            let { mouseX, mouseY } = adjustMouseCoordinates(e);
-            const width = mouseX - startX;
-            const height = mouseY - startY;
-            createHistogram(startX, startY, width, height);
-            imageDataSetAfterDrag = true;
-        };
+            // Create an overlay canvas for drawing rectangles
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    overlayCanvas = document.createElement('canvas');
+
+                    overlayCanvas.width = canvas.width;
+                    overlayCanvas.height = canvas.height;
+                    overlayCanvas.style.position = 'absolute';
+                    overlayCanvas.style.top = canvas.offsetTop + 'px';
+                    overlayCanvas.style.left = canvas.offsetLeft + 'px';
+                    overlayCanvas.style.pointerEvents = 'none'; // Prevent interfering with mouse events
+                    document.body.appendChild(overlayCanvas);
+
+                    const overlayCtx = overlayCanvas.getContext('2d');
+
+                    // Adjust existing event handlers to use the overlay
+                    canvas.onmousemove = function (e) {
+                        if (isDragging) {
+                            let { mouseX, mouseY } = adjustMouseCoordinates(e);
+                            const width = mouseX - startX;
+                            const height = mouseY - startY;
+
+                            // Clear the overlay canvas
+                            overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+
+                            // Draw the rectangle on the overlay canvas
+                            overlayCtx.beginPath();
+                            const lineWidth = 2;
+                            overlayCtx.rect(startX - lineWidth, startY - lineWidth, width + lineWidth * 2, height + lineWidth * 2);
+                            overlayCtx.strokeStyle = 'red';
+                            overlayCtx.lineWidth = lineWidth;
+                            overlayCtx.stroke();
+                        }
+                    };
+
+                    canvas.onmouseup = function (e) {
+                        isDragging = false;
+                        let { mouseX, mouseY } = adjustMouseCoordinates(e);
+                        const width = mouseX - startX;
+                        const height = mouseY - startY;
+
+                        histCoords = { startX, startY, width, height };
+
+                        // Keep the overlay canvas as is for the rectangle
+                        createHistogram(startX, startY, width, height);
+                        imageDataSetAfterDrag = true;
+                    };
+
+                    // Handle touch events for the overlay similarly
+                    canvas.addEventListener('touchmove', function (e) {
+                        e.preventDefault();
+                        if (isDragging) {
+                            const touch = e.touches[0];
+                            const { mouseX, mouseY } = adjustTouchCoordinates(touch);
+                            const width = mouseX - startX;
+                            const height = mouseY - startY;
+
+                            // Clear the overlay canvas
+                            overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+
+                            // Draw the rectangle on the overlay canvas
+                            overlayCtx.beginPath();
+                            const lineWidth = 2;
+                            overlayCtx.rect(startX - lineWidth, startY - lineWidth, width + lineWidth * 2, height + lineWidth * 2);
+                            overlayCtx.strokeStyle = 'red';
+                            overlayCtx.lineWidth = lineWidth;
+                            overlayCtx.stroke();
+                        }
+                    });
+                })
+            })
+        }
 
         // Touch event handlers
         canvas.addEventListener('touchstart', function (e) {
@@ -842,24 +917,6 @@
             isDragging = true;
         });
 
-        canvas.addEventListener('touchmove', function (e) {
-            e.preventDefault(); // Prevent default touch behavior
-            if (isDragging) {
-                const touch = e.touches[0]; // Get the first touch point
-                const { mouseX, mouseY } = adjustTouchCoordinates(touch);
-                const width = mouseX - startX;
-                const height = mouseY - startY;
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-                ctx.drawImage(img, 0, 0);
-                ctx.beginPath();
-                const lineWidth = 2;
-                ctx.rect(startX - lineWidth, startY - lineWidth, width + lineWidth * 2, height + lineWidth * 2);
-                ctx.strokeStyle = 'red';
-                ctx.lineWidth = lineWidth;
-                ctx.stroke();
-            }
-        });
-
         canvas.addEventListener('touchend', function (e) {
             e.preventDefault(); // Prevent default touch behavior
             isDragging = false;
@@ -867,6 +924,9 @@
             const { mouseX, mouseY } = adjustTouchCoordinates(touch);
             const width = mouseX - startX;
             const height = mouseY - startY;
+
+            histCoords = { startX, startY, width, height };
+
             createHistogram(startX, startY, width, height);
             imageDataSetAfterDrag = true;
         });
@@ -896,7 +956,7 @@
             }
 
             imageData = ctx.getImageData(x, y, width, height);
-            computeHistogram(null);
+            computeHistogram(this.checked);
         }
 
         function computeHistogram(isColor = false) {
