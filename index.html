@@ -596,6 +596,7 @@
         <button id="flipButtonHorizontal">Flip Horizontal</button>
         <button id="contrastButton">Increase Contrast</button>
         <button id="download-btn">Download</button>
+        <button id="undoButton">Undo</button>
     </div>
     <div class="tools-container">
         <label>
@@ -634,6 +635,64 @@
         img.src = 'castle1.png'; // Replace with the path to your image
         img2.src = 'castle1.png'; // Ensure img2 loads the same initial image
 
+        // Global variables to track transformations
+        let angle = 0;
+        let isFlippedHorizontally = false;
+        let isFlippedVertically = false;
+
+        // Undo stack (stores up to 3 previous states)
+        let undoStack = [];
+
+        // Save the current state of the canvases and transformation variables
+        function saveState() {
+            const state = {
+                canvasDataURL: canvas.toDataURL(),
+                offScreenDataURL: offScreenCanvas.toDataURL(),
+                angle: angle,
+                isFlippedHorizontally: isFlippedHorizontally,
+                isFlippedVertically: isFlippedVertically
+            };
+            undoStack.push(state);
+            if (undoStack.length > 3) {
+                undoStack.shift(); // Keep only the latest 3 states
+            }
+        }
+
+        // Restore a saved state
+        function restoreState(state) {
+            angle = state.angle;
+            isFlippedHorizontally = state.isFlippedHorizontally;
+            isFlippedVertically = state.isFlippedVertically;
+
+            // Restore offScreenCanvas state
+            let offScreenImage = new Image();
+            offScreenImage.onload = function () {
+                offScreenCtx.clearRect(0, 0, offScreenCanvas.width, offScreenCanvas.height);
+                offScreenCtx.drawImage(offScreenImage, 0, 0);
+                img2.src = offScreenCanvas.toDataURL();
+
+                // Restore canvas state (display image)
+                let displayImage = new Image();
+                displayImage.onload = function () {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    ctx.drawImage(displayImage, 0, 0, canvas.width, canvas.height);
+                    img.src = canvas.toDataURL();
+                };
+                displayImage.src = state.canvasDataURL;
+            };
+            offScreenImage.src = state.offScreenDataURL;
+        }
+
+        // Undo button event listener
+        document.getElementById('undoButton').addEventListener('click', function () {
+            if (undoStack.length > 0) {
+                const lastState = undoStack.pop();
+                restoreState(lastState);
+            } else {
+                alert("No actions to undo!");
+            }
+        });
+
         img.onload = function () {
             // Calculate scaling factor to fit within 1024x1024
             let scaleFactor = Math.min(1024 / img.width, 1024 / img.height, 1);
@@ -654,7 +713,7 @@
 
         let originalWidth, originalHeight;
 
-        // Set up the file uploader event listener
+        // File uploader event listener (clears undo history on new image)
         document.getElementById('fileUploader').addEventListener('change', function (event) {
             const file = event.target.files[0];
             if (file) {
@@ -662,105 +721,75 @@
                 reader.onload = function (e) {
                     img.src = e.target.result;  // Set image source to the file content
                     img2.src = e.target.result; // Update img2 as well
+                    undoStack = []; // Clear undo history on new image load
 
                     img.onload = function () {
-                        // Calculate scaling factor
                         let scaleFactor = Math.min(1024 / img.width, 1024 / img.height, 1);
                         canvas.width = img.width * scaleFactor;
                         canvas.height = img.height * scaleFactor;
                         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
                         if (!originalWidth && !originalHeight) {
-                            // For 'offScreenCanvas' with original resolution
                             originalWidth = img.width;
                             originalHeight = img.height;
                             offScreenCanvas.width = originalWidth;
                             offScreenCanvas.height = originalHeight;
                             offScreenCtx.drawImage(img, 0, 0);
-
-                            // Update scaling factor
                             canvasToImageScale = img.width / canvas.width;
                         }
-
                         addOverlay();
                     };
                 };
-                reader.readAsDataURL(file);  // Read the file as Data URL
+                reader.readAsDataURL(file);
             }
         });
 
-        let isFlippedHorizontally = false;
-        let isFlippedVertically = false;
-
         function applyTransformations() {
-            // Apply transformations to 'canvas' and 'ctx'
             applyTransformationsToCanvas(ctx, canvas, img);
-
-            // Update 'img.src' from 'canvas'
             img.src = canvas.toDataURL();
-
-            // Apply transformations to 'offScreenCanvas' and 'offScreenCtx' for 'img2'
             applyTransformationsToCanvas(offScreenCtx, offScreenCanvas, img2);
-
-            // Update 'img2.src' from 'offScreenCanvas'
             img2.src = offScreenCanvas.toDataURL();
-
             if (histCoords) {
                 createHistogram(histCoords.startX, histCoords.startY, histCoords.width, histCoords.height);
             }
         }
 
         function applyTransformationsToCanvas(context, cnv, image) {
-            // Clear the canvas first
             context.clearRect(0, 0, cnv.width, cnv.height);
-
-            // Reset transformations to default
             context.setTransform(1, 0, 0, 1, 0, 0);
-
-            // Apply horizontal flip if needed
             if (isFlippedHorizontally) {
                 context.translate(cnv.width, 0);
                 context.scale(-1, 1);
             }
-
-            // Apply vertical flip if needed
             if (isFlippedVertically) {
                 context.translate(0, cnv.height);
                 context.scale(1, -1);
             }
-
-            // Redraw the image with current transformations
             context.drawImage(image, 0, 0, cnv.width, cnv.height);
         }
 
         function flipImageHorizontally() {
-            // Toggle the horizontal flip state
+            saveState();
             isFlippedHorizontally = !isFlippedHorizontally;
-            applyTransformations(); // Apply the current transformations
+            applyTransformations();
         }
 
         function flipImageVertically() {
-            // Toggle the vertical flip state
+            saveState();
             isFlippedVertically = !isFlippedVertically;
-            applyTransformations(); // Apply the current transformations
+            applyTransformations();
         }
 
         document.getElementById('flipButtonHorizontal').addEventListener('click', flipImageHorizontally);
         document.getElementById('flipButton').addEventListener('click', flipImageVertically);
 
         const rotateBtn = document.getElementById('rotateBtn');
-        let angle = 0; // Initialize angle of rotation
-
         rotateBtn.addEventListener('click', function () {
-            angle += 45; // Increase angle by 45 degrees each click
-            angle = angle % 360; // Keep the angle within 0-359 degrees
-
-            // Rotate and update 'canvas' and 'img'
+            saveState();
+            angle += 45;
+            angle = angle % 360;
             rotateCanvas(ctx, canvas, img, angle);
-
-            // Rotate and update 'offScreenCanvas' and 'img2'
             rotateCanvas(offScreenCtx, offScreenCanvas, img2, angle);
-
             if (histCoords) {
                 createHistogram(histCoords.startX, histCoords.startY, histCoords.width, histCoords.height);
             }
@@ -777,37 +806,27 @@
 
         let startX, startY, isDragging = false;
         document.getElementById('download-btn').addEventListener('click', function () {
-            downloadImageDataAsImage('downloaded.png'); // Trigger download
+            downloadImageDataAsImage('downloaded.png');
         });
 
         function downloadImageDataAsImage(filename) {
             let imageData;
             if (imageDataSetAfterDrag) {
-                // Crop the off-screen canvas image
                 imageData = offScreenCtx.getImageData(scaledStartX, scaledStartY, scaledWidth, scaledHeight);
-            }
-            else {
+            } else {
                 imageData = offScreenCtx.getImageData(0, 0, img2.width, img2.height);
             }
-
-            console.log(offScreenCanvas.toDataURL());
-
-            // Create a new canvas element
-            let canvas = document.createElement('canvas');
+            let canvasTemp = document.createElement('canvas');
             if (imageDataSetAfterDrag) {
-                canvas.width = scaledWidth;
-                canvas.height = scaledHeight;
+                canvasTemp.width = scaledWidth;
+                canvasTemp.height = scaledHeight;
             } else {
-                canvas.width = img2.width;
-                canvas.height = img2.height;
+                canvasTemp.width = img2.width;
+                canvasTemp.height = img2.height;
             }
-
-            // Get context of the new canvas and put imageData into it
-            const ctxNew = canvas.getContext('2d');
+            const ctxNew = canvasTemp.getContext('2d');
             ctxNew.putImageData(imageData, 0, 0);
-
-            // Use 'offScreenCanvas' to get the full-resolution image
-            const imageURL = canvas.toDataURL('image/png');
+            const imageURL = canvasTemp.toDataURL('image/png');
             const a = document.createElement('a');
             a.href = imageURL;
             a.download = filename;
@@ -820,65 +839,51 @@
             if (luminance < 25 || luminance > 230) {
                 return luminance;
             }
-
             return (0.7512 + (0.00195 * luminance)) * luminance;
         }
 
-
         document.getElementById('contrastButton').addEventListener('click', function () {
-            // For 'canvas' and 'img'
+            saveState();
             const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
             const data = imageData.data;
-
             for (let i = 0; i < data.length; i += 4) {
                 data[i] = linearScaleContrast(data[i]);
                 data[i + 1] = linearScaleContrast(data[i + 1]);
                 data[i + 2] = linearScaleContrast(data[i + 2]);
             }
-
             ctx.putImageData(imageData, 0, 0);
             img.src = canvas.toDataURL();
 
-            // For 'offScreenCanvas' and 'img2'
             const imageData2 = offScreenCtx.getImageData(0, 0, offScreenCanvas.width, offScreenCanvas.height);
             const data2 = imageData2.data;
-
             for (let i = 0; i < data2.length; i += 4) {
                 data2[i] = linearScaleContrast(data2[i]);
                 data2[i + 1] = linearScaleContrast(data2[i + 1]);
                 data2[i + 2] = linearScaleContrast(data2[i + 2]);
             }
-
             offScreenCtx.putImageData(imageData2, 0, 0);
             img2.src = offScreenCanvas.toDataURL();
-
             if (histCoords) {
                 createHistogram(histCoords.startX, histCoords.startY, histCoords.width, histCoords.height);
             }
         });
 
         document.getElementById('grayscaleButton').addEventListener('click', function () {
-            // For 'canvas' and 'img'
+            saveState();
             const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
             const data = imageData.data;
-
             for (let i = 0; i < data.length; i += 4) {
                 const red = data[i];
                 const green = data[i + 1];
                 const blue = data[i + 2];
-                // Calculate the luminance
                 const luminance = 0.299 * red + 0.587 * green + 0.114 * blue;
-                // Set the red, green, and blue pixels to the luminance
                 data[i] = data[i + 1] = data[i + 2] = luminance;
             }
-
             ctx.putImageData(imageData, 0, 0);
-            img.src = canvas.toDataURL(); // Convert canvas content to a data URL
+            img.src = canvas.toDataURL();
 
-            // For 'offScreenCanvas' and 'img2'
             const imageData2 = offScreenCtx.getImageData(0, 0, offScreenCanvas.width, offScreenCanvas.height);
             const data2 = imageData2.data;
-
             for (let i = 0; i < data2.length; i += 4) {
                 const red = data2[i];
                 const green = data2[i + 1];
@@ -886,82 +891,66 @@
                 const luminance = 0.299 * red + 0.587 * green + 0.114 * blue;
                 data2[i] = data2[i + 1] = data2[i + 2] = luminance;
             }
-
             offScreenCtx.putImageData(imageData2, 0, 0);
             img2.src = offScreenCanvas.toDataURL();
-
             if (histCoords) {
                 createHistogram(histCoords.startX, histCoords.startY, histCoords.width, histCoords.height);
             }
         });
 
         document.getElementById('lightenButton').addEventListener('click', function () {
-            // For 'canvas' and 'img'
+            saveState();
             const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
             const data = imageData.data;
-
             for (let i = 0; i < data.length; i += 4) {
-                data[i] = data[i] * 1.1;     // R
-                data[i + 1] = data[i + 1] * 1.1; // G
-                data[i + 2] = data[i + 2] * 1.1; // B
+                data[i] = data[i] * 1.1;
+                data[i + 1] = data[i + 1] * 1.1;
+                data[i + 2] = data[i + 2] * 1.1;
             }
-
             ctx.putImageData(imageData, 0, 0);
             img.src = canvas.toDataURL();
 
-            // For 'offScreenCanvas' and 'img2'
             const imageData2 = offScreenCtx.getImageData(0, 0, offScreenCanvas.width, offScreenCanvas.height);
             const data2 = imageData2.data;
-
             for (let i = 0; i < data2.length; i += 4) {
-                data2[i] = data2[i] * 1.1;     // R
-                data2[i + 1] = data2[i + 1] * 1.1; // G
-                data2[i + 2] = data2[i + 2] * 1.1; // B
+                data2[i] = data2[i] * 1.1;
+                data2[i + 1] = data2[i + 1] * 1.1;
+                data2[i + 2] = data2[i + 2] * 1.1;
             }
-
             offScreenCtx.putImageData(imageData2, 0, 0);
             img2.src = offScreenCanvas.toDataURL();
-
             if (histCoords) {
                 createHistogram(histCoords.startX, histCoords.startY, histCoords.width, histCoords.height);
             }
         });
 
         document.getElementById('darkenButton').addEventListener('click', function () {
-            // For 'canvas' and 'img'
+            saveState();
             const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
             const data = imageData.data;
-
             for (let i = 0; i < data.length; i += 4) {
-                data[i] *= 0.9;     // Red
-                data[i + 1] *= 0.9; // Green
-                data[i + 2] *= 0.9; // Blue
-                // Alpha (data[i + 3]) remains unchanged
+                data[i] *= 0.9;
+                data[i + 1] *= 0.9;
+                data[i + 2] *= 0.9;
             }
-
             ctx.putImageData(imageData, 0, 0);
             img.src = canvas.toDataURL();
 
-            // For 'offScreenCanvas' and 'img2'
             const imageData2 = offScreenCtx.getImageData(0, 0, offScreenCanvas.width, offScreenCanvas.height);
             const data2 = imageData2.data;
-
             for (let i = 0; i < data2.length; i += 4) {
-                data2[i] *= 0.9;     // Red
-                data2[i + 1] *= 0.9; // Green
-                data2[i + 2] *= 0.9; // Blue
-                // Alpha (data2[i + 3]) remains unchanged
+                data2[i] *= 0.9;
+                data2[i + 1] *= 0.9;
+                data2[i + 2] *= 0.9;
             }
-
             offScreenCtx.putImageData(imageData2, 0, 0);
             img2.src = offScreenCanvas.toDataURL();
-
             if (histCoords) {
                 createHistogram(histCoords.startX, histCoords.startY, histCoords.width, histCoords.height);
             }
         });
 
-        // Mouse events
+        // Mouse and touch events (unchanged)
         canvas.onmousedown = function (e) {
             let { mouseX, mouseY } = adjustMouseCoordinates(e);
             startX = mouseX;
@@ -974,12 +963,8 @@
                 let { mouseX, mouseY } = adjustMouseCoordinates(e);
                 const width = mouseX - startX;
                 const height = mouseY - startY;
-
-                // Clear the overlay canvas
                 const overlayCtx = overlayCanvas.getContext('2d', { willReadFrequently: true });
                 overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
-
-                // Draw the rectangle on the overlay canvas
                 overlayCtx.beginPath();
                 const lineWidth = 2;
                 overlayCtx.rect(startX - lineWidth, startY - lineWidth, width + lineWidth * 2, height + lineWidth * 2);
@@ -990,38 +975,29 @@
         };
 
         let scaledHeight, scaledWidth, scaledStartX, scaledStartY;
-
         canvas.onmouseup = function (e) {
             isDragging = false;
             let { mouseX, mouseY } = adjustMouseCoordinates(e);
             const width = mouseX - startX;
             const height = mouseY - startY;
-
             histCoords = { startX, startY, width, height };
-
-            // Compute scaled coordinates for img2
             scaledStartX = Math.round(startX * canvasToImageScale);
             scaledStartY = Math.round(startY * canvasToImageScale);
             scaledWidth = Math.round(width * canvasToImageScale);
             scaledHeight = Math.round(height * canvasToImageScale);
-
-            // Keep the overlay canvas as is for the rectangle
             createHistogram(0, 0, width, height);
-
             imageDataSetAfterDrag = true;
         };
 
         function adjustMouseCoordinates(e) {
             let mouseX = e.offsetX;
             let mouseY = e.offsetY;
-
             return { mouseX, mouseY };
         }
 
-        // Touch events
         canvas.addEventListener('touchstart', function (e) {
-            e.preventDefault(); // Prevent default touch behavior (e.g., scrolling)
-            const touch = e.touches[0]; // Get the first touch point
+            e.preventDefault();
+            const touch = e.touches[0];
             const { mouseX, mouseY } = adjustTouchCoordinates(touch);
             startX = mouseX;
             startY = mouseY;
@@ -1035,12 +1011,8 @@
                 const { mouseX, mouseY } = adjustTouchCoordinates(touch);
                 const width = mouseX - startX;
                 const height = mouseY - startY;
-
-                // Clear the overlay canvas
                 const overlayCtx = overlayCanvas.getContext('2d', { willReadFrequently: true });
                 overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
-
-                // Draw the rectangle on the overlay canvas
                 overlayCtx.beginPath();
                 const lineWidth = 2;
                 overlayCtx.rect(startX - lineWidth, startY - lineWidth, width + lineWidth * 2, height + lineWidth * 2);
@@ -1051,32 +1023,25 @@
         });
 
         canvas.addEventListener('touchend', function (e) {
-            e.preventDefault(); // Prevent default touch behavior
+            e.preventDefault();
             isDragging = false;
-            const touch = e.changedTouches[0]; // Get the last touch point
+            const touch = e.changedTouches[0];
             const { mouseX, mouseY } = adjustTouchCoordinates(touch);
             const width = mouseX - startX;
             const height = mouseY - startY;
-
             histCoords = { startX, startY, width, height };
-
-            // Compute scaled coordinates for img2
             scaledStartX = Math.round(startX * canvasToImageScale);
             scaledStartY = Math.round(startY * canvasToImageScale);
             scaledWidth = Math.round(width * canvasToImageScale);
             scaledHeight = Math.round(height * canvasToImageScale);
-
-            // Keep the overlay canvas as is for the rectangle
             createHistogram(0, 0, width, height);
-
             imageDataSetAfterDrag = true;
         });
 
         function adjustTouchCoordinates(touch) {
-            const rect = canvas.getBoundingClientRect(); // Get canvas bounding box
+            const rect = canvas.getBoundingClientRect();
             let mouseX = touch.clientX - rect.left;
             let mouseY = touch.clientY - rect.top;
-
             return { mouseX, mouseY };
         }
 
@@ -1084,16 +1049,13 @@
             if (overlayCanvas && document.body.contains(overlayCanvas)) {
                 document.body.removeChild(overlayCanvas);
             }
-
-            // Create an overlay canvas for drawing rectangles
             overlayCanvas = document.createElement('canvas');
-
             overlayCanvas.width = canvas.width;
             overlayCanvas.height = canvas.height;
             overlayCanvas.style.position = 'absolute';
             overlayCanvas.style.top = canvas.offsetTop + 'px';
             overlayCanvas.style.left = canvas.offsetLeft + 'px';
-            overlayCanvas.style.pointerEvents = 'none'; // Prevent interfering with mouse events
+            overlayCanvas.style.pointerEvents = 'none';
             document.body.appendChild(overlayCanvas);
             document.getElementById('fileUploader').value = '';
         }
@@ -1102,7 +1064,6 @@
             if (width === 0 || height === 0) {
                 return;
             }
-
             imageData = ctx.getImageData(x, y, width, height);
             computeHistogram(this.checked);
         }
@@ -1111,16 +1072,12 @@
             if (isColor !== null && isColor !== undefined) {
                 showColorHistogram = isColor;
             }
-
             if (!imageData) {
                 return;
             }
-
             const data = imageData.data;
-
             if (!showColorHistogram) {
                 let luminanceHistogram = new Array(256).fill(0);
-
                 for (let i = 0; i < data.length; i += 4) {
                     const r = data[i];
                     const g = data[i + 1];
@@ -1128,13 +1085,11 @@
                     const luminance = 0.299 * r + 0.587 * g + 0.114 * b;
                     luminanceHistogram[Math.floor(luminance)]++;
                 }
-
                 displayHistogram(luminanceHistogram);
             } else {
                 let luminanceHistogramR = new Array(256).fill(0);
                 let luminanceHistogramG = new Array(256).fill(0);
                 let luminanceHistogramB = new Array(256).fill(0);
-
                 for (let i = 0; i < data.length; i += 4) {
                     const r = data[i];
                     const g = data[i + 1];
@@ -1143,7 +1098,6 @@
                     luminanceHistogramG[g]++;
                     luminanceHistogramB[b]++;
                 }
-
                 displayColorHistogram(luminanceHistogramR, luminanceHistogramG, luminanceHistogramB);
             }
         }
@@ -1153,32 +1107,26 @@
             histogramElementR.innerHTML = '';
             histogramElementG.innerHTML = '';
             histogramElementB.innerHTML = '';
-
             histogramElement.style.height = '100px';
             histogramElement.style.width = 'max(50%, 500px)';
-
             histogramElementR.style.height = '';
             histogramElementR.style.width = '';
-
             histogramElementG.style.height = '';
             histogramElementG.style.width = '';
-
             histogramElementB.style.height = '';
             histogramElementB.style.width = '';
-
-            // Use setTimeout to ensure the style is applied and rendered
             setTimeout(() => {
-                // Get the computed style of the element
                 const computedStyle = window.getComputedStyle(histogramElement);
-                // Access the width property, which gives the final computed width in pixels
                 let computedWidth = computedStyle.width;
-
                 if (computedWidth.includes('px')) {
                     computedWidth = computedWidth.replace('px', '');
                 }
-
                 computedWidth = Number(computedWidth);
-
+                let emd = 0;
+                for (let i = 1; i < histogram.length; ++i) {
+                    emd += Math.abs(histogram[i] - histogram[i - 1]);
+                }
+                console.log(emd);
                 const maxCount = Math.max(...histogram);
                 histogram.forEach((count, i) => {
                     const bar = document.createElement('div');
@@ -1196,32 +1144,21 @@
             histogramElementR.innerHTML = '';
             histogramElementG.innerHTML = '';
             histogramElementB.innerHTML = '';
-
             histogramElement.style.height = '';
             histogramElement.style.width = '';
-
             histogramElementR.style.height = '100px';
             histogramElementR.style.width = 'max(50%, 500px)';
-
             histogramElementG.style.height = '100px';
             histogramElementG.style.width = 'max(50%, 500px)';
-
             histogramElementB.style.height = '100px';
             histogramElementB.style.width = 'max(50%, 500px)';
-
-            // Use setTimeout to ensure the style is applied and rendered
             setTimeout(() => {
-                // Get the computed style of the element
                 const computedStyle = window.getComputedStyle(histogramElementR);
-                // Access the width property, which gives the final computed width in pixels
                 let computedWidth = computedStyle.width;
-
                 if (computedWidth.includes('px')) {
                     computedWidth = computedWidth.replace('px', '');
                 }
-
                 computedWidth = Number(computedWidth);
-
                 const maxCountR = Math.max(...histogramR);
                 histogramR.forEach((count, i) => {
                     const bar = document.createElement('div');
@@ -1231,7 +1168,6 @@
                     bar.style.display = 'inline-block';
                     histogramElementR.appendChild(bar);
                 });
-
                 const maxCountG = Math.max(...histogramG);
                 histogramG.forEach((count, i) => {
                     const bar = document.createElement('div');
@@ -1241,7 +1177,6 @@
                     bar.style.display = 'inline-block';
                     histogramElementG.appendChild(bar);
                 });
-
                 const maxCountB = Math.max(...histogramB);
                 histogramB.forEach((count, i) => {
                     const bar = document.createElement('div');
