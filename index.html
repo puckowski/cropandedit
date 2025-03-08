@@ -310,7 +310,9 @@
 
     input[type=range] {
       -webkit-appearance: none;
-      background: 0 0
+      background: 0 0;
+      width: 35rem;
+      vertical-align: middle;
     }
 
     input[type=range]:focus {
@@ -601,6 +603,9 @@
     <!-- Pencil Brush Tool -->
     <button id="pencilBrushButton">Pencil Brush</button>
     <input type="color" id="colorWheel" style="display:none;" value="#000000">
+     <!-- Pencil Brush Thickness Control -->
+     <label for="pencilThickness" id="pencilThicknessLabel" style="display:none;">Pencil Thickness:</label>
+     <input type="range" id="pencilThickness" min="1" max="30" value="2" style="display:none;">
   </div>
   <div class="tools-container">
     <label>
@@ -616,7 +621,7 @@
     <div id="histogramb"></div>
   </div>
   <script>
-    let imageData;
+     let imageData;
     let showColorHistogram;
     let imageDataSetAfterDrag = false;
     let overlayCanvas;
@@ -815,15 +820,28 @@
     let drawingPencil = false;
     let pencilColor = "#000000";
     let lastX, lastY;
+    // Pencil thickness variable (default 2 pixels)
+    let pencilThickness = 2;
+
+    // Update pencil thickness when the slider is changed
+    document.getElementById('pencilThickness').addEventListener('input', function () {
+      pencilThickness = this.value;
+      document.getElementById('pencilThicknessLabel').textContent = "Pencil Thickness: " + pencilThickness;
+    });
 
     // Pencil Brush Button and Color Wheel
     document.getElementById('pencilBrushButton').addEventListener('click', function () {
       pencilMode = !pencilMode;
       if (pencilMode) {
         document.getElementById('colorWheel').style.display = 'inline-block';
+        document.getElementById('pencilThickness').style.display = 'inline-block';
+        document.getElementById('pencilThicknessLabel').style.display = 'inline-block';
+        document.getElementById('pencilThicknessLabel').textContent = "Pencil Thickness: " + document.getElementById('pencilThickness').value;
         this.style.backgroundColor = '#ccc'; // indicate active mode
       } else {
         document.getElementById('colorWheel').style.display = 'none';
+        document.getElementById('pencilThickness').style.display = 'none';
+        document.getElementById('pencilThicknessLabel').style.display = 'none';
         this.style.backgroundColor = '';
       }
     });
@@ -998,7 +1016,7 @@
       if (pencilMode) {
         if (!drawingPencil) return;
         ctx.strokeStyle = pencilColor;
-        ctx.lineWidth = 2; // Adjust line width as needed
+        ctx.lineWidth = pencilThickness; // Use the slider value for line thickness
         ctx.lineTo(mouseX, mouseY);
         ctx.stroke();
         lastX = mouseX;
@@ -1068,7 +1086,7 @@
       if (pencilMode) {
         if (!drawingPencil) return;
         ctx.strokeStyle = pencilColor;
-        ctx.lineWidth = 2;
+        ctx.lineWidth = pencilThickness;
         ctx.lineTo(mouseX, mouseY);
         ctx.stroke();
         lastX = mouseX;
