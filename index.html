@@ -602,10 +602,12 @@
     <button id="undoButton">Undo</button>
     <!-- Pencil Brush Tool -->
     <button id="pencilBrushButton">Pencil Brush</button>
+    <!-- Spray Brush Tool -->
+    <button id="sprayBrushButton">Spray Brush</button>
     <input type="color" id="colorWheel" style="display:none;" value="#000000">
-     <!-- Pencil Brush Thickness Control -->
-     <label for="pencilThickness" id="pencilThicknessLabel" style="display:none;">Pencil Thickness:</label>
-     <input type="range" id="pencilThickness" min="1" max="30" value="2" style="display:none;">
+    <!-- Pencil/Spray Thickness Control -->
+    <label for="pencilThickness" id="pencilThicknessLabel" style="display:none;">Pencil Thickness:</label>
+    <input type="range" id="pencilThickness" min="1" max="30" value="2" style="display:none;">
   </div>
   <div class="tools-container">
     <label>
@@ -621,7 +623,7 @@
     <div id="histogramb"></div>
   </div>
   <script>
-     let imageData;
+    let imageData;
     let showColorHistogram;
     let imageDataSetAfterDrag = false;
     let overlayCanvas;
@@ -649,7 +651,7 @@
     let isFlippedHorizontally = false;
     let isFlippedVertically = false;
 
-    // Undo stack (stores up to 3 previous states)
+    // Undo stack (stores up to 10 previous states)
     let undoStack = [];
 
     // Save the current state of the canvases and transformation variables
@@ -662,8 +664,8 @@
         isFlippedVertically: isFlippedVertically
       };
       undoStack.push(state);
-      if (undoStack.length > 3) {
-        undoStack.shift(); // Keep only the latest 3 states
+      if (undoStack.length > 10) {
+        undoStack.shift(); // Keep only the latest 10 states
       }
     }
 
@@ -813,14 +815,18 @@
       context.restore();
     }
 
-    // Variables for selection and pencil drawing
+    // Variables for selection and drawing
     let startX, startY, isDragging = false;
     // Pencil mode variables
     let pencilMode = false;
     let drawingPencil = false;
+    // Spray mode variables
+    let sprayMode = false;
+    let spraying = false;
+    let sprayX = 0, sprayY = 0;
+    let sprayInterval = null;
+    // Drawing color and thickness (shared by both tools)
     let pencilColor = "#000000";
-    let lastX, lastY;
-    // Pencil thickness variable (default 2 pixels)
     let pencilThickness = 2;
 
     // Update pencil thickness when the slider is changed
@@ -833,11 +839,34 @@
     document.getElementById('pencilBrushButton').addEventListener('click', function () {
       pencilMode = !pencilMode;
       if (pencilMode) {
+        // Deactivate spray mode if active
+        sprayMode = false;
+        document.getElementById('sprayBrushButton').style.backgroundColor = '';
         document.getElementById('colorWheel').style.display = 'inline-block';
         document.getElementById('pencilThickness').style.display = 'inline-block';
         document.getElementById('pencilThicknessLabel').style.display = 'inline-block';
         document.getElementById('pencilThicknessLabel').textContent = "Pencil Thickness: " + document.getElementById('pencilThickness').value;
-        this.style.backgroundColor = '#ccc'; // indicate active mode
+        this.style.backgroundColor = '#ccc';
+      } else {
+        document.getElementById('colorWheel').style.display = 'none';
+        document.getElementById('pencilThickness').style.display = 'none';
+        document.getElementById('pencilThicknessLabel').style.display = 'none';
+        this.style.backgroundColor = '';
+      }
+    });
+
+    // Spray Brush Button
+    document.getElementById('sprayBrushButton').addEventListener('click', function () {
+      sprayMode = !sprayMode;
+      if (sprayMode) {
+        // Deactivate pencil mode if active
+        pencilMode = false;
+        document.getElementById('pencilBrushButton').style.backgroundColor = '';
+        document.getElementById('colorWheel').style.display = 'inline-block';
+        document.getElementById('pencilThickness').style.display = 'inline-block';
+        document.getElementById('pencilThicknessLabel').style.display = 'inline-block';
+        document.getElementById('pencilThicknessLabel').textContent = "Pencil Thickness: " + document.getElementById('pencilThickness').value;
+        this.style.backgroundColor = '#ccc';
       } else {
         document.getElementById('colorWheel').style.display = 'none';
         document.getElementById('pencilThickness').style.display = 'none';
@@ -995,6 +1024,20 @@
       }
     });
 
+    // Spray brush helper: draws a number of small dots in a circular region around (x, y)
+    function sprayAt(x, y) {
+      const density = 30; // dots per interval
+      const radius = pencilThickness; // use pencilThickness as the spray radius
+      for (let i = 0; i < density; i++) {
+        const angle = Math.random() * 2 * Math.PI;
+        const distance = Math.random() * radius;
+        const offsetX = Math.cos(angle) * distance;
+        const offsetY = Math.sin(angle) * distance;
+        ctx.fillStyle = pencilColor;
+        ctx.fillRect(x + offsetX, y + offsetY, 1, 1);
+      }
+    }
+
     // Canvas Mouse Events
     canvas.onmousedown = function (e) {
       let { mouseX, mouseY } = adjustMouseCoordinates(e);
@@ -1004,6 +1047,11 @@
         lastY = mouseY;
         ctx.beginPath();
         ctx.moveTo(lastX, lastY);
+      } else if (sprayMode) {
+        spraying = true;
+        sprayX = mouseX;
+        sprayY = mouseY;
+        sprayInterval = setInterval(() => sprayAt(sprayX, sprayY), 50);
       } else {
         startX = mouseX;
         startY = mouseY;
@@ -1016,11 +1064,14 @@
       if (pencilMode) {
         if (!drawingPencil) return;
         ctx.strokeStyle = pencilColor;
-        ctx.lineWidth = pencilThickness; // Use the slider value for line thickness
+        ctx.lineWidth = pencilThickness;
         ctx.lineTo(mouseX, mouseY);
         ctx.stroke();
         lastX = mouseX;
         lastY = mouseY;
+      } else if (sprayMode && spraying) {
+        sprayX = mouseX;
+        sprayY = mouseY;
       } else if (isDragging) {
         const width = mouseX - startX;
         const height = mouseY - startY;
@@ -1039,6 +1090,10 @@
     canvas.onmouseup = function (e) {
       if (pencilMode) {
         drawingPencil = false;
+        saveState();
+      } else if (sprayMode) {
+        spraying = false;
+        clearInterval(sprayInterval);
         saveState();
       } else {
         isDragging = false;
@@ -1061,7 +1116,7 @@
       return { mouseX, mouseY };
     }
 
-    // Touch events with pencil support
+    // Touch events with pencil/spray support
     canvas.addEventListener('touchstart', function (e) {
       e.preventDefault();
       const touch = e.touches[0];
@@ -1072,6 +1127,11 @@
         lastY = mouseY;
         ctx.beginPath();
         ctx.moveTo(lastX, lastY);
+      } else if (sprayMode) {
+        spraying = true;
+        sprayX = mouseX;
+        sprayY = mouseY;
+        sprayInterval = setInterval(() => sprayAt(sprayX, sprayY), 50);
       } else {
         startX = mouseX;
         startY = mouseY;
@@ -1091,6 +1151,9 @@
         ctx.stroke();
         lastX = mouseX;
         lastY = mouseY;
+      } else if (sprayMode && spraying) {
+        sprayX = mouseX;
+        sprayY = mouseY;
       } else if (isDragging) {
         const width = mouseX - startX;
         const height = mouseY - startY;
@@ -1109,6 +1172,10 @@
       e.preventDefault();
       if (pencilMode) {
         drawingPencil = false;
+        saveState();
+      } else if (sprayMode) {
+        spraying = false;
+        clearInterval(sprayInterval);
         saveState();
       } else {
         isDragging = false;
@@ -1280,4 +1347,3 @@
 </body>
 
 </html>
-
