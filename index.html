@@ -2,1348 +2,1350 @@
 <html>
 
 <head>
-  <title>Crop and Edit</title>
-  <style>
-    canvas {
-      border: 1px solid black;
-    }
-  </style>
-  <style>
-    dialog {
-      background-color: var(--background500);
-      color: var(--foreground500);
-      border: none;
-      border-radius: 6px;
-      padding: 10px 30px
-    }
-
-    dialog>header:first-child {
-      background-color: var(--background600);
-      border-radius: 6px 6px 0 0;
-      margin: -10px -30px 10px;
-      padding: 10px;
-      text-align: center
-    }
-
-    dialog::backdrop {
-      background: #0000009c;
-      backdrop-filter: blur(4px)
-    }
-
-    input,
-    select,
-    textarea {
-      width: 100%
-    }
-
-    button:focus,
-    input:focus,
-    select:focus,
-    textarea:focus {
-      box-shadow: 0 0 0 1px var(--primary500)
-    }
-
-    button:hover,
-    input:hover,
-    select:hover,
-    textarea:hover {
-      box-shadow: 0 0 0 1px var(--primary500)
-    }
-
-    button[readonly],
-    input[readonly],
-    select[readonly],
-    textarea[readonly] {
-      cursor: pointer;
-      filter: brightness(80%)
-    }
-
-    button:disabled,
-    input:disabled,
-    select:disabled,
-    textarea:disabled {
-      cursor: not-allowed;
-      filter: brightness(80%)
-    }
-
-    input[type=checkbox] {
-      appearance: none;
-      background-color: var(--background700);
-      margin: 0;
-      font: inherit;
-      color: currentColor;
-      width: 1.15em;
-      height: 1.15em;
-      transform: translateY(-.075em);
-      display: inline-grid;
-      place-content: center;
-      border-color: var(--background700)
-    }
-
-    input[type=checkbox]::before {
-      content: "";
-      width: .75em;
-      height: .75em;
-      clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0%, 43% 62%);
-      transform: scale(0);
-      transform-origin: bottom left;
-      transition: .2s transform ease-in-out;
-      box-shadow: inset 1em 1em var(--primary500);
-      background-color: CanvasText
-    }
-
-    input[type=checkbox]:checked::before {
-      transform: scale(1)
-    }
-
-    input[type=checkbox]:focus {
-      outline: 1px solid var(--primary500)
-    }
-
-    input[type=radio] {
-      appearance: none;
-      background-color: var(--background700);
-      margin: 0;
-      font: inherit;
-      color: currentColor;
-      width: 1.15em;
-      height: 1.15em;
-      border-color: var(--background700);
-      border-radius: 50%;
-      transform: translateY(-.075em);
-      display: inline-grid;
-      place-content: center
-    }
-
-    input[type=radio]::before {
-      content: "";
-      width: .65em;
-      height: .65em;
-      border-radius: 50%;
-      transform: scale(0);
-      transition: .2s transform ease-in-out;
-      box-shadow: inset 1em 1em var(--primary500);
-      background-color: CanvasText
-    }
-
-    input[type=radio]:checked::before {
-      transform: scale(1)
-    }
-
-    input[type=radio]:focus {
-      outline: 1px solid var(--primary500)
-    }
-
-    select {
-      background: var(--background600);
-      padding-right: 35px;
-      color: var(--foreground500);
-      padding: 4px 8px
-    }
-
-    select::-ms-expand {
-      display: none
-    }
-
-    select[multiple] {
-      padding-right: 10px;
-      background-image: none;
-      overflow-y: auto
-    }
-
-    select option {
-      background: var(--background600)
-    }
-
-    ::placeholder {
-      color: var(--foreground600)
-    }
-
-    [type=checkbox][role=switch] {
-      width: 2.475em;
-      height: 1.25em;
-      border-radius: 1.25em;
-      background: linear-gradient(to right, var(--background600) 50%, var(--background700) 50%);
-      line-height: 1.25em;
-      padding-left: 1.6em
-    }
-
-    [type=checkbox][role=switch]:checked {
-      background-image: none;
-      background: linear-gradient(to right, var(--background600) 50%, var(--background700) 50%);
-      padding-left: 1.6em
-    }
-
-    input[type=color] {
-      height: 3.25em;
-      width: 3.25rem;
-      padding: 4px;
-      vertical-align: middle
-    }
-
-    [type=file] {
-      border: 0;
-      border-radius: 0;
-      background: 0 0;
-      width: auto;
-      padding: 0px;
-    }
-
-    input[type=file]::file-selector-button {
-      background-color: var(--background600);
-      border: none;
-      padding: 8px
-    }
-
-    button,
-    input,
-    textarea {
-      background-color: var(--background600);
-      color: var(--foreground500);
-      border-radius: 2px;
-      border: none;
-      padding: 8px;
-      transition: box-shadow var(--animation-duration) linear;
-      margin: 1px
-    }
-
-    button,
-    input[type=button],
-    input[type=checkbox],
-    input[type=radio],
-    input[type=range],
-    input[type=reset],
-    input[type=submit],
-    select {
-      cursor: pointer
-    }
-
-    a {
-      text-decoration: none;
-      color: var(--primary500)
-    }
-
-    a:hover {
-      text-decoration: none
-    }
-
-    hr {
-      border: none;
-      border-top: 1px solid var(--foreground600)
-    }
-
-    code,
-    samp,
-    time {
-      color: var(--primary600);
-      background-color: var(--background600);
-      display: inline-block;
-      padding: 2px 4px;
-      border-radius: 6px
-    }
-
-    details {
-      display: flex;
-      flex-direction: column;
-      align-items: flex-start;
-      background-color: var(--background550);
-      padding: 10px 10px 0;
-      margin: 1em 0;
-      border-radius: 6px;
-      overflow: hidden
-    }
-
-    details[open] {
-      padding: 10px
-    }
-
-    details>:last-child {
-      margin-bottom: 0
-    }
-
-    details[open] summary {
-      margin-bottom: 10px
-    }
-
-    summary {
-      display: list-item;
-      background-color: var(--background600);
-      padding: 10px;
-      margin: -10px -10px 0;
-      cursor: pointer;
-      outline: 0
-    }
-
-    details>:not(summary) {
-      margin-top: 0
-    }
-
-    var {
-      color: var(--foreground600);
-      font-style: normal;
-      font-family: monospace
-    }
-
-    kbd {
-      background: var(--background600);
-      border-radius: 2px;
-      color: var(--foreground500);
-      padding: 2px 4px 2px 4px
-    }
-
-    fieldset {
-      border: 1px var(--foreground600) solid;
-      border-radius: 6px;
-      margin: 0;
-      padding: 10px
-    }
-
-    blockquote,
-    q {
-      border-left: 1px solid var(--foreground600);
-      padding: 4px 8px
-    }
-
-    mark {
-      background-color: var(--secondary500)
-    }
-
-    input[type=range] {
-      -webkit-appearance: none;
-      background: 0 0;
-      width: 35rem;
-      vertical-align: middle;
-    }
-
-    input[type=range]:focus {
-      outline: 0
-    }
-
-    input[type=range]::-webkit-slider-runnable-track {
-      width: 100%;
-      height: 8.4px;
-      cursor: pointer;
-      background: var(--background700);
-      border-radius: 1.3px;
-      border: none
-    }
-
-    input[type=range]::-webkit-slider-thumb {
-      border: none;
-      height: 16px;
-      width: 16px;
-      background: var(--primary500);
-      cursor: pointer;
-      -webkit-appearance: none;
-      margin-top: -4.2px;
-      border-radius: 50%
-    }
-
-    input[type=range]:focus::-webkit-slider-runnable-track {
-      background: var(--background700)
-    }
-
-    input[type=range]::-moz-range-track {
-      width: 100%;
-      height: 8.4px;
-      cursor: pointer;
-      background: var(--background700);
-      border-radius: 1.3px;
-      border: none
-    }
-
-    input[type=range]::-moz-range-thumb {
-      border: none;
-      height: 16px;
-      width: 16px;
-      background: var(--primary500);
-      cursor: pointer;
-      border-radius: 50%
-    }
-
-    input[type=range]::-ms-track {
-      width: 100%;
-      height: 8.4px;
-      cursor: pointer;
-      background: 0 0;
-      border-color: transparent;
-      border-width: 16px 0;
-      color: transparent
-    }
-
-    input[type=range]::-ms-fill-lower {
-      background: var(--background700);
-      border: none;
-      border-radius: 2.6px
-    }
-
-    input[type=range]::-ms-fill-upper {
-      background: var(--background700);
-      border: none;
-      border-radius: 2.6px
-    }
-
-    input[type=range]::-ms-thumb {
-      border: none;
-      height: 16px;
-      width: 16px;
-      background: var(--primary500);
-      cursor: pointer;
-      border-radius: 50%
-    }
-
-    input[type=range]:focus::-ms-fill-lower {
-      background: var(--background700)
-    }
-
-    input[type=range]:focus::-ms-fill-upper {
-      background: var(--background700)
-    }
-
-    table {
-      border-collapse: collapse;
-      margin-bottom: 10px;
-      width: 100%;
-      table-layout: fixed
-    }
-
-    table caption {
-      text-align: left
-    }
-
-    td,
-    th {
-      padding: 6px;
-      text-align: left;
-      vertical-align: top;
-      word-wrap: break-word
-    }
-
-    thead {
-      border-bottom: 1px solid var(--foreground600)
-    }
-
-    tfoot {
-      border-top: 1px solid var(--foreground600)
-    }
-
-    tbody tr:nth-child(even) {
-      background-color: var(--background550)
-    }
-
-    progress {
-      display: inline-block;
-      vertical-align: baseline
-    }
-
-    progress {
-      -webkit-appearance: none;
-      -moz-appearance: none;
-      display: inline-block;
-      appearance: none;
-      width: 100%;
-      height: .5rem;
-      overflow: hidden;
-      border: 0;
-      border-radius: 6px;
-      background-color: var(--background600);
-      color: var(--primary500);
-      margin-bottom: 6px
-    }
-
-    progress::-webkit-progress-bar {
-      border-radius: 6px;
-      background: 0 0
-    }
-
-    progress[value]::-webkit-progress-value {
-      background-color: var(--primary500);
-      -webkit-transition: inline-size var(--animation-duration);
-      transition: inline-size var(--animation-duration)
-    }
-
-    progress::-moz-progress-bar {
-      background-color: var(--primary500)
-    }
-
-    progress:indeterminate {
-      background: var(--background600) linear-gradient(to right, var(--primary500) 30%, var(--background600) 30%) top left/150% 150% no-repeat;
-      animation: progress-indeterminate 2s linear infinite
-    }
-
-    progress:indeterminate[value]::-webkit-progress-value {
-      background-color: transparent
-    }
-
-    progress:indeterminate::-moz-progress-bar {
-      background-color: transparent
-    }
-
-    [dir=rtl] progress:indeterminate {
-      animation-direction: reverse
-    }
-
-    @keyframes progress-indeterminate {
-      0% {
-        background-position: 200% 0
-      }
-
-      100% {
-        background-position: -200% 0
-      }
-    }
-
-    [data-tooltip] {
-      position: relative
-    }
-
-    [data-tooltip]::after,
-    [data-tooltip]::before {
-      display: block;
-      z-index: 99;
-      position: absolute;
-      bottom: 100%;
-      left: 50%;
-      padding: .25rem .5rem;
-      overflow: hidden;
-      transform: translate(-50%, -.25rem);
-      border-radius: 6px;
-      background: var(--background600);
-      content: attr(data-tooltip);
-      color: var(--foreground500);
-      font-style: normal;
-      font-size: .875rem;
-      text-decoration: none;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      opacity: 0;
-      pointer-events: none
-    }
-
-    [data-tooltip]::after {
-      padding: 0;
-      transform: translate(-50%, 0);
-      border-top: .3rem solid;
-      border-right: .3rem solid transparent;
-      border-left: .3rem solid transparent;
-      border-radius: 0;
-      background-color: transparent;
-      content: "";
-      color: var(--forground600)
-    }
-
-    [data-tooltip]:focus::after,
-    [data-tooltip]:focus::before,
-    [data-tooltip]:hover::after,
-    [data-tooltip]:hover::before {
-      opacity: 1
-    }
-
-    :root {
-      --foreground500: #161f27;
-      --foreground600: #0f151b;
-      --background500: #ffffff;
-      --background550: #f0f0ff;
-      --background600: #e0e0e0;
-      --background700: #c7c7c7;
-      --primary500: #0172ad;
-      --primary600: #014a85;
-      --secondary500: #ffe1a8;
-      --animation-duration: 200ms
-    }
-
-    [dir=rtl] {
-      direction: rtl
-    }
-
-    html {
-      scrollbar-color: var(--foreground500) var(--background500);
-      scrollbar-width: thin
-    }
-
-    body {
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Fira Sans', 'Droid Sans', 'Helvetica Neue', 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif;
-      padding: 16px 16px;
-      word-wrap: break-word;
-      color: var(--foreground500);
-      background: var(--background500);
-      text-rendering: optimizeLegibility
-    }
-
-    .tools-container {
-      padding: 4px 0px 4px 0px;
-    }
-  </style>
-  <meta name="description"
-    content="Crop and Edit is a simple online tool for image editing. Easily crop, resize, and enhance your images directly from your browser. Perfect for casual users.">
-  <meta property="og:title" content="Crop and Edit - Online Image Editing Tool">
-  <meta property="og:type" content="website">
-  <meta name="robots" content="index, follow">
-  <meta name="author" content="Daniel Puckowski">
-  <meta name="keywords"
-    content="image editor, crop image, resize image, photo editing, online image tool, free image editing">
-  <meta charset="UTF-8">
+    <title>Crop and Edit</title>
+    <style>
+        canvas {
+            border: 1px solid black;
+        }
+    </style>
+    <style>
+        dialog {
+            background-color: var(--background500);
+            color: var(--foreground500);
+            border: none;
+            border-radius: 6px;
+            padding: 10px 30px
+        }
+
+        dialog>header:first-child {
+            background-color: var(--background600);
+            border-radius: 6px 6px 0 0;
+            margin: -10px -30px 10px;
+            padding: 10px;
+            text-align: center
+        }
+
+        dialog::backdrop {
+            background: #0000009c;
+            backdrop-filter: blur(4px)
+        }
+
+        input,
+        select,
+        textarea {
+            width: 100%
+        }
+
+        button:focus,
+        input:focus,
+        select:focus,
+        textarea:focus {
+            box-shadow: 0 0 0 1px var(--primary500)
+        }
+
+        button:hover,
+        input:hover,
+        select:hover,
+        textarea:hover {
+            box-shadow: 0 0 0 1px var(--primary500)
+        }
+
+        button[readonly],
+        input[readonly],
+        select[readonly],
+        textarea[readonly] {
+            cursor: pointer;
+            filter: brightness(80%)
+        }
+
+        button:disabled,
+        input:disabled,
+        select:disabled,
+        textarea:disabled {
+            cursor: not-allowed;
+            filter: brightness(80%)
+        }
+
+        input[type=checkbox] {
+            appearance: none;
+            background-color: var(--background700);
+            margin: 0;
+            font: inherit;
+            color: currentColor;
+            width: 1.15em;
+            height: 1.15em;
+            transform: translateY(-.075em);
+            display: inline-grid;
+            place-content: center;
+            border-color: var(--background700)
+        }
+
+        input[type=checkbox]::before {
+            content: "";
+            width: .75em;
+            height: .75em;
+            clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0%, 43% 62%);
+            transform: scale(0);
+            transform-origin: bottom left;
+            transition: .2s transform ease-in-out;
+            box-shadow: inset 1em 1em var(--primary500);
+            background-color: CanvasText
+        }
+
+        input[type=checkbox]:checked::before {
+            transform: scale(1)
+        }
+
+        input[type=checkbox]:focus {
+            outline: 1px solid var(--primary500)
+        }
+
+        input[type=radio] {
+            appearance: none;
+            background-color: var(--background700);
+            margin: 0;
+            font: inherit;
+            color: currentColor;
+            width: 1.15em;
+            height: 1.15em;
+            border-color: var(--background700);
+            border-radius: 50%;
+            transform: translateY(-.075em);
+            display: inline-grid;
+            place-content: center
+        }
+
+        input[type=radio]::before {
+            content: "";
+            width: .65em;
+            height: .65em;
+            border-radius: 50%;
+            transform: scale(0);
+            transition: .2s transform ease-in-out;
+            box-shadow: inset 1em 1em var(--primary500);
+            background-color: CanvasText
+        }
+
+        input[type=radio]:checked::before {
+            transform: scale(1)
+        }
+
+        input[type=radio]:focus {
+            outline: 1px solid var(--primary500)
+        }
+
+        select {
+            background: var(--background600);
+            padding-right: 35px;
+            color: var(--foreground500);
+            padding: 4px 8px
+        }
+
+        select::-ms-expand {
+            display: none
+        }
+
+        select[multiple] {
+            padding-right: 10px;
+            background-image: none;
+            overflow-y: auto
+        }
+
+        select option {
+            background: var(--background600)
+        }
+
+        ::placeholder {
+            color: var(--foreground600)
+        }
+
+        [type=checkbox][role=switch] {
+            width: 2.475em;
+            height: 1.25em;
+            border-radius: 1.25em;
+            background: linear-gradient(to right, var(--background600) 50%, var(--background700) 50%);
+            line-height: 1.25em;
+            padding-left: 1.6em
+        }
+
+        [type=checkbox][role=switch]:checked {
+            background-image: none;
+            background: linear-gradient(to right, var(--background600) 50%, var(--background700) 50%);
+            padding-left: 1.6em
+        }
+
+        input[type=color] {
+            height: 3.25em;
+            width: 3.25rem;
+            padding: 4px;
+            vertical-align: middle
+        }
+
+        [type=file] {
+            border: 0;
+            border-radius: 0;
+            background: 0 0;
+            width: auto;
+            padding: 0px;
+        }
+
+        input[type=file]::file-selector-button {
+            background-color: var(--background600);
+            border: none;
+            padding: 8px
+        }
+
+        button,
+        input,
+        textarea {
+            background-color: var(--background600);
+            color: var(--foreground500);
+            border-radius: 2px;
+            border: none;
+            padding: 8px;
+            transition: box-shadow var(--animation-duration) linear;
+            margin: 1px
+        }
+
+        button,
+        input[type=button],
+        input[type=checkbox],
+        input[type=radio],
+        input[type=range],
+        input[type=reset],
+        input[type=submit],
+        select {
+            cursor: pointer
+        }
+
+        a {
+            text-decoration: none;
+            color: var(--primary500)
+        }
+
+        a:hover {
+            text-decoration: none
+        }
+
+        hr {
+            border: none;
+            border-top: 1px solid var(--foreground600)
+        }
+
+        code,
+        samp,
+        time {
+            color: var(--primary600);
+            background-color: var(--background600);
+            display: inline-block;
+            padding: 2px 4px;
+            border-radius: 6px
+        }
+
+        details {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            background-color: var(--background550);
+            padding: 10px 10px 0;
+            margin: 1em 0;
+            border-radius: 6px;
+            overflow: hidden
+        }
+
+        details[open] {
+            padding: 10px
+        }
+
+        details>:last-child {
+            margin-bottom: 0
+        }
+
+        details[open] summary {
+            margin-bottom: 10px
+        }
+
+        summary {
+            display: list-item;
+            background-color: var(--background600);
+            padding: 10px;
+            margin: -10px -10px 0;
+            cursor: pointer;
+            outline: 0
+        }
+
+        details>:not(summary) {
+            margin-top: 0
+        }
+
+        var {
+            color: var(--foreground600);
+            font-style: normal;
+            font-family: monospace
+        }
+
+        kbd {
+            background: var(--background600);
+            border-radius: 2px;
+            color: var(--foreground500);
+            padding: 2px 4px 2px 4px
+        }
+
+        fieldset {
+            border: 1px var(--foreground600) solid;
+            border-radius: 6px;
+            margin: 0;
+            padding: 10px
+        }
+
+        blockquote,
+        q {
+            border-left: 1px solid var(--foreground600);
+            padding: 4px 8px
+        }
+
+        mark {
+            background-color: var(--secondary500)
+        }
+
+        input[type=range] {
+            -webkit-appearance: none;
+            background: 0 0;
+            width: 35rem;
+            vertical-align: middle;
+        }
+
+        input[type=range]:focus {
+            outline: 0
+        }
+
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 8.4px;
+            cursor: pointer;
+            background: var(--background700);
+            border-radius: 1.3px;
+            border: none
+        }
+
+        input[type=range]::-webkit-slider-thumb {
+            border: none;
+            height: 16px;
+            width: 16px;
+            background: var(--primary500);
+            cursor: pointer;
+            -webkit-appearance: none;
+            margin-top: -4.2px;
+            border-radius: 50%
+        }
+
+        input[type=range]:focus::-webkit-slider-runnable-track {
+            background: var(--background700)
+        }
+
+        input[type=range]::-moz-range-track {
+            width: 100%;
+            height: 8.4px;
+            cursor: pointer;
+            background: var(--background700);
+            border-radius: 1.3px;
+            border: none
+        }
+
+        input[type=range]::-moz-range-thumb {
+            border: none;
+            height: 16px;
+            width: 16px;
+            background: var(--primary500);
+            cursor: pointer;
+            border-radius: 50%
+        }
+
+        input[type=range]::-ms-track {
+            width: 100%;
+            height: 8.4px;
+            cursor: pointer;
+            background: 0 0;
+            border-color: transparent;
+            border-width: 16px 0;
+            color: transparent
+        }
+
+        input[type=range]::-ms-fill-lower {
+            background: var(--background700);
+            border: none;
+            border-radius: 2.6px
+        }
+
+        input[type=range]::-ms-fill-upper {
+            background: var(--background700);
+            border: none;
+            border-radius: 2.6px
+        }
+
+        input[type=range]::-ms-thumb {
+            border: none;
+            height: 16px;
+            width: 16px;
+            background: var(--primary500);
+            cursor: pointer;
+            border-radius: 50%
+        }
+
+        input[type=range]:focus::-ms-fill-lower {
+            background: var(--background700)
+        }
+
+        input[type=range]:focus::-ms-fill-upper {
+            background: var(--background700)
+        }
+
+        table {
+            border-collapse: collapse;
+            margin-bottom: 10px;
+            width: 100%;
+            table-layout: fixed
+        }
+
+        table caption {
+            text-align: left
+        }
+
+        td,
+        th {
+            padding: 6px;
+            text-align: left;
+            vertical-align: top;
+            word-wrap: break-word
+        }
+
+        thead {
+            border-bottom: 1px solid var(--foreground600)
+        }
+
+        tfoot {
+            border-top: 1px solid var(--foreground600)
+        }
+
+        tbody tr:nth-child(even) {
+            background-color: var(--background550)
+        }
+
+        progress {
+            display: inline-block;
+            vertical-align: baseline
+        }
+
+        progress {
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            display: inline-block;
+            appearance: none;
+            width: 100%;
+            height: .5rem;
+            overflow: hidden;
+            border: 0;
+            border-radius: 6px;
+            background-color: var(--background600);
+            color: var(--primary500);
+            margin-bottom: 6px
+        }
+
+        progress::-webkit-progress-bar {
+            border-radius: 6px;
+            background: 0 0
+        }
+
+        progress[value]::-webkit-progress-value {
+            background-color: var(--primary500);
+            -webkit-transition: inline-size var(--animation-duration);
+            transition: inline-size var(--animation-duration)
+        }
+
+        progress::-moz-progress-bar {
+            background-color: var(--primary500)
+        }
+
+        progress:indeterminate {
+            background: var(--background600) linear-gradient(to right, var(--primary500) 30%, var(--background600) 30%) top left/150% 150% no-repeat;
+            animation: progress-indeterminate 2s linear infinite
+        }
+
+        progress:indeterminate[value]::-webkit-progress-value {
+            background-color: transparent
+        }
+
+        progress:indeterminate::-moz-progress-bar {
+            background-color: transparent
+        }
+
+        [dir=rtl] progress:indeterminate {
+            animation-direction: reverse
+        }
+
+        @keyframes progress-indeterminate {
+            0% {
+                background-position: 200% 0
+            }
+
+            100% {
+                background-position: -200% 0
+            }
+        }
+
+        [data-tooltip] {
+            position: relative
+        }
+
+        [data-tooltip]::after,
+        [data-tooltip]::before {
+            display: block;
+            z-index: 99;
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            padding: .25rem .5rem;
+            overflow: hidden;
+            transform: translate(-50%, -.25rem);
+            border-radius: 6px;
+            background: var(--background600);
+            content: attr(data-tooltip);
+            color: var(--foreground500);
+            font-style: normal;
+            font-size: .875rem;
+            text-decoration: none;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none
+        }
+
+        [data-tooltip]::after {
+            padding: 0;
+            transform: translate(-50%, 0);
+            border-top: .3rem solid;
+            border-right: .3rem solid transparent;
+            border-left: .3rem solid transparent;
+            border-radius: 0;
+            background-color: transparent;
+            content: "";
+            color: var(--forground600)
+        }
+
+        [data-tooltip]:focus::after,
+        [data-tooltip]:focus::before,
+        [data-tooltip]:hover::after,
+        [data-tooltip]:hover::before {
+            opacity: 1
+        }
+
+        :root {
+            --foreground500: #161f27;
+            --foreground600: #0f151b;
+            --background500: #ffffff;
+            --background550: #f0f0ff;
+            --background600: #e0e0e0;
+            --background700: #c7c7c7;
+            --primary500: #0172ad;
+            --primary600: #014a85;
+            --secondary500: #ffe1a8;
+            --animation-duration: 200ms
+        }
+
+        [dir=rtl] {
+            direction: rtl
+        }
+
+        html {
+            scrollbar-color: var(--foreground500) var(--background500);
+            scrollbar-width: thin
+        }
+
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Fira Sans', 'Droid Sans', 'Helvetica Neue', 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif;
+            padding: 16px 16px;
+            word-wrap: break-word;
+            color: var(--foreground500);
+            background: var(--background500);
+            text-rendering: optimizeLegibility
+        }
+
+        .tools-container {
+            padding: 4px 0px 4px 0px;
+        }
+    </style>
+    <meta name="description"
+        content="Crop and Edit is a simple online tool for image editing. Easily crop, resize, and enhance your images directly from your browser. Perfect for casual users.">
+    <meta property="og:title" content="Crop and Edit - Online Image Editing Tool">
+    <meta property="og:type" content="website">
+    <meta name="robots" content="index, follow">
+    <meta name="author" content="Daniel Puckowski">
+    <meta name="keywords"
+        content="image editor, crop image, resize image, photo editing, online image tool, free image editing">
+    <meta charset="UTF-8">
 </head>
 
 <body>
-  <canvas id="canvas"></canvas>
-  <div class="tools-container">
-    <input type="file" id="fileUploader" accept="image/*" />
-  </div>
-  <div class="tools-container">
-    <button id="lightenButton">Lighten Image</button>
-    <button id="darkenButton">Darken Image</button>
-    <button id="grayscaleButton">Grayscale</button>
-    <button id="rotateBtn">Rotate 45°</button>
-    <button id="flipButton">Flip Vertical</button>
-    <button id="flipButtonHorizontal">Flip Horizontal</button>
-    <button id="contrastButton">Increase Contrast</button>
-    <button id="download-btn">Download</button>
-    <button id="undoButton">Undo</button>
-    <!-- Pencil Brush Tool -->
-    <button id="pencilBrushButton">Pencil Brush</button>
-    <!-- Spray Brush Tool -->
-    <button id="sprayBrushButton">Spray Brush</button>
-    <input type="color" id="colorWheel" style="display:none;" value="#000000">
-    <!-- Pencil/Spray Thickness Control -->
-    <label for="pencilThickness" id="pencilThicknessLabel" style="display:none;">Pencil Thickness:</label>
-    <input type="range" id="pencilThickness" min="1" max="30" value="2" style="display:none;">
-  </div>
-  <div class="tools-container">
-    <label>
-      <input type="checkbox" id="histogramToggle" onchange="computeHistogram(this.checked)">
-      Show Color Histogram
-    </label>
-  </div>
+    <canvas id="canvas"></canvas>
+    <div class="tools-container">
+        <input type="file" id="fileUploader" accept="image/*" />
+    </div>
+    <div class="tools-container">
+        <button id="lightenButton">Lighten Image</button>
+        <button id="darkenButton">Darken Image</button>
+        <button id="grayscaleButton">Grayscale</button>
+        <button id="rotateBtn">Rotate 45°</button>
+        <button id="flipButton">Flip Vertical</button>
+        <button id="flipButtonHorizontal">Flip Horizontal</button>
+        <button id="contrastButton">Increase Contrast</button>
+        <button id="download-btn">Download</button>
+        <button id="undoButton">Undo</button>
+        <!-- Pencil Brush Tool -->
+        <button id="pencilBrushButton">Pencil Brush</button>
+        <!-- Spray Brush Tool -->
+        <button id="sprayBrushButton">Spray Brush</button>
+        <input type="color" id="colorWheel" style="display:none;" value="#000000">
+        <!-- Pencil/Spray Thickness Control -->
+        <label for="pencilThickness" id="pencilThicknessLabel" style="display:none;">Pencil Thickness:</label>
+        <input type="range" id="pencilThickness" min="1" max="30" value="2" style="display:none;">
+    </div>
+    <div class="tools-container">
+        <label>
+            <input type="checkbox" id="histogramToggle" onchange="computeHistogram(this.checked)">
+            Show Color Histogram
+        </label>
+    </div>
 
-  <div id="histogram"></div>
-  <div>
-    <div id="histogramr"></div>
-    <div id="histogramg"></div>
-    <div id="histogramb"></div>
-  </div>
-  <script>
-    let imageData;
-    let showColorHistogram;
-    let imageDataSetAfterDrag = false;
-    let overlayCanvas;
-    let histCoords;
-    let canvasToImageScale = 1; // Scaling factor from canvas to original image dimensions
+    <div id="histogram"></div>
+    <div>
+        <div id="histogramr"></div>
+        <div id="histogramg"></div>
+        <div id="histogramb"></div>
+    </div>
+    <script>
+        let imageData;
+        let showColorHistogram;
+        let imageDataSetAfterDrag = false;
+        let overlayCanvas;
+        let histCoords;
+        let canvasToImageScale = 1; // Scaling factor from canvas to original image dimensions
 
-    const canvas = document.getElementById('canvas');
-    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
 
-    // Create an off-screen canvas for img2
-    const offScreenCanvas = document.createElement('canvas');
-    const offScreenCtx = offScreenCanvas.getContext('2d', { willReadFrequently: true });
+        // Create an off-screen canvas for img2
+        const offScreenCanvas = document.createElement('canvas');
+        const offScreenCtx = offScreenCanvas.getContext('2d', { willReadFrequently: true });
 
-    const histogramElement = document.getElementById('histogram');
-    const histogramElementR = document.getElementById('histogramr');
-    const histogramElementG = document.getElementById('histogramg');
-    const histogramElementB = document.getElementById('histogramb');
-    let img = new Image();
-    let img2 = new Image();
-    img.src = 'castle1.png'; // Replace with the path to your image
-    img2.src = 'castle1.png'; // Ensure img2 loads the same initial image
+        const histogramElement = document.getElementById('histogram');
+        const histogramElementR = document.getElementById('histogramr');
+        const histogramElementG = document.getElementById('histogramg');
+        const histogramElementB = document.getElementById('histogramb');
+        let img = new Image();
+        let img2 = new Image();
+        img.src = 'castle1.png'; // Replace with the path to your image
+        img2.src = 'castle1.png'; // Ensure img2 loads the same initial image
 
-    // Global variables to track transformations
-    let angle = 0;
-    let isFlippedHorizontally = false;
-    let isFlippedVertically = false;
+        // Global variables to track transformations
+        let angle = 0;
+        let isFlippedHorizontally = false;
+        let isFlippedVertically = false;
 
-    // Undo stack (stores up to 10 previous states)
-    let undoStack = [];
+        // Undo stack (stores up to 10 previous states)
+        let undoStack = [];
 
-    // Save the current state of the canvases and transformation variables
-    function saveState() {
-      const state = {
-        canvasDataURL: canvas.toDataURL(),
-        offScreenDataURL: offScreenCanvas.toDataURL(),
-        angle: angle,
-        isFlippedHorizontally: isFlippedHorizontally,
-        isFlippedVertically: isFlippedVertically
-      };
-      undoStack.push(state);
-      if (undoStack.length > 10) {
-        undoStack.shift(); // Keep only the latest 10 states
-      }
-    }
+        // Save the current state of the canvases and transformation variables
+        function saveState() {
+            const state = {
+                canvasDataURL: canvas.toDataURL(),
+                offScreenDataURL: offScreenCanvas.toDataURL(),
+                angle: angle,
+                isFlippedHorizontally: isFlippedHorizontally,
+                isFlippedVertically: isFlippedVertically
+            };
+            undoStack.push(state);
+            if (undoStack.length > 10) {
+                undoStack.shift(); // Keep only the latest 10 states
+            }
+        }
 
-    // Restore a saved state
-    function restoreState(state) {
-      angle = state.angle;
-      isFlippedHorizontally = state.isFlippedHorizontally;
-      isFlippedVertically = state.isFlippedVertically;
+        // Restore a saved state
+        function restoreState(state) {
+            angle = state.angle;
+            isFlippedHorizontally = state.isFlippedHorizontally;
+            isFlippedVertically = state.isFlippedVertically;
 
-      // Restore offScreenCanvas state
-      let offScreenImage = new Image();
-      offScreenImage.onload = function () {
-        offScreenCtx.clearRect(0, 0, offScreenCanvas.width, offScreenCanvas.height);
-        offScreenCtx.drawImage(offScreenImage, 0, 0);
-        img2.src = offScreenCanvas.toDataURL();
+            // Restore offScreenCanvas state
+            let offScreenImage = new Image();
+            offScreenImage.onload = function () {
+                offScreenCtx.clearRect(0, 0, offScreenCanvas.width, offScreenCanvas.height);
+                offScreenCtx.drawImage(offScreenImage, 0, 0);
+                img2.src = offScreenCanvas.toDataURL();
 
-        // Restore canvas state (display image)
-        let displayImage = new Image();
-        displayImage.onload = function () {
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
-          ctx.drawImage(displayImage, 0, 0, canvas.width, canvas.height);
-          img.src = canvas.toDataURL();
-        };
-        displayImage.src = state.canvasDataURL;
-      };
-      offScreenImage.src = state.offScreenDataURL;
-    }
+                // Restore canvas state (display image)
+                let displayImage = new Image();
+                displayImage.onload = function () {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    ctx.drawImage(displayImage, 0, 0, canvas.width, canvas.height);
+                    img.src = canvas.toDataURL();
+                };
+                displayImage.src = state.canvasDataURL;
+            };
+            offScreenImage.src = state.offScreenDataURL;
+        }
 
-    // Undo button event listener
-    document.getElementById('undoButton').addEventListener('click', function () {
-      if (undoStack.length > 0) {
-        const lastState = undoStack.pop();
-        restoreState(lastState);
-      } else {
-        alert("No actions to undo!");
-      }
-    });
+        // Undo button event listener
+        document.getElementById('undoButton').addEventListener('click', function () {
+            if (undoStack.length > 0) {
+                const lastState = undoStack.pop();
+                restoreState(lastState);
+            } else {
+                alert("No actions to undo!");
+            }
+        });
 
-    img.onload = function () {
-      // Calculate scaling factor to fit within 1024x1024
-      let scaleFactor = Math.min(1024 / img.width, 1024 / img.height, 1);
-      canvas.width = img.width * scaleFactor;
-      canvas.height = img.height * scaleFactor;
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-
-      // Set up offScreenCanvas with original image resolution
-      offScreenCanvas.width = img.width;
-      offScreenCanvas.height = img.height;
-      offScreenCtx.drawImage(img, 0, 0);
-
-      // Compute scaling factor for coordinate adjustments
-      canvasToImageScale = img.width / canvas.width;
-
-      addOverlay();
-    };
-
-    let originalWidth, originalHeight;
-
-    // File uploader event listener (clears undo history on new image)
-    document.getElementById('fileUploader').addEventListener('change', function (event) {
-      const file = event.target.files[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = function (e) {
-          img.src = e.target.result;  // Set image source to the file content
-          img2.src = e.target.result; // Update img2 as well
-          undoStack = []; // Clear undo history on new image load
-
-          img.onload = function () {
+        img.onload = function () {
+            // Calculate scaling factor to fit within 1024x1024
             let scaleFactor = Math.min(1024 / img.width, 1024 / img.height, 1);
             canvas.width = img.width * scaleFactor;
             canvas.height = img.height * scaleFactor;
             ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-            if (!originalWidth && !originalHeight) {
-              originalWidth = img.width;
-              originalHeight = img.height;
-              offScreenCanvas.width = originalWidth;
-              offScreenCanvas.height = originalHeight;
-              offScreenCtx.drawImage(img, 0, 0);
-              canvasToImageScale = img.width / canvas.width;
-            }
+            // Set up offScreenCanvas with original image resolution
+            offScreenCanvas.width = img.width;
+            offScreenCanvas.height = img.height;
+            offScreenCtx.drawImage(img, 0, 0);
+
+            // Compute scaling factor for coordinate adjustments
+            canvasToImageScale = img.width / canvas.width;
+
             addOverlay();
-          };
         };
-        reader.readAsDataURL(file);
-      }
-    });
 
-    function applyTransformations() {
-      applyTransformationsToCanvas(ctx, canvas, img);
-      img.src = canvas.toDataURL();
-      applyTransformationsToCanvas(offScreenCtx, offScreenCanvas, img2);
-      img2.src = offScreenCanvas.toDataURL();
-      if (histCoords) {
-        createHistogram(histCoords.startX, histCoords.startY, histCoords.width, histCoords.height);
-      }
-    }
+        let originalWidth, originalHeight;
 
-    function applyTransformationsToCanvas(context, cnv, image) {
-      context.clearRect(0, 0, cnv.width, cnv.height);
-      context.setTransform(1, 0, 0, 1, 0, 0);
-      if (isFlippedHorizontally) {
-        context.translate(cnv.width, 0);
-        context.scale(-1, 1);
-      }
-      if (isFlippedVertically) {
-        context.translate(0, cnv.height);
-        context.scale(1, -1);
-      }
-      context.drawImage(image, 0, 0, cnv.width, cnv.height);
-    }
+        // File uploader event listener (clears undo history on new image)
+        document.getElementById('fileUploader').addEventListener('change', function (event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    img.src = e.target.result;  // Set image source to the file content
+                    img2.src = e.target.result; // Update img2 as well
+                    undoStack = []; // Clear undo history on new image load
 
-    function flipImageHorizontally() {
-      saveState();
-      isFlippedHorizontally = !isFlippedHorizontally;
-      applyTransformations();
-    }
+                    img.onload = function () {
+                        let scaleFactor = Math.min(1024 / img.width, 1024 / img.height, 1);
+                        canvas.width = img.width * scaleFactor;
+                        canvas.height = img.height * scaleFactor;
+                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-    function flipImageVertically() {
-      saveState();
-      isFlippedVertically = !isFlippedVertically;
-      applyTransformations();
-    }
-
-    document.getElementById('flipButtonHorizontal').addEventListener('click', flipImageHorizontally);
-    document.getElementById('flipButton').addEventListener('click', flipImageVertically);
-
-    const rotateBtn = document.getElementById('rotateBtn');
-    rotateBtn.addEventListener('click', function () {
-      saveState();
-      angle += 45;
-      angle = angle % 360;
-      rotateCanvas(ctx, canvas, img, angle);
-      rotateCanvas(offScreenCtx, offScreenCanvas, img2, angle);
-      if (histCoords) {
-        createHistogram(histCoords.startX, histCoords.startY, histCoords.width, histCoords.height);
-      }
-    });
-
-    function rotateCanvas(context, cnv, image, angle) {
-      context.clearRect(0, 0, cnv.width, cnv.height);
-      context.save();
-      context.translate(cnv.width / 2, cnv.height / 2);
-      context.rotate(angle * Math.PI / 180);
-      context.drawImage(image, -cnv.width / 2, -cnv.height / 2, cnv.width, cnv.height);
-      context.restore();
-    }
-
-    // Variables for selection and drawing
-    let startX, startY, isDragging = false;
-    // Pencil mode variables
-    let pencilMode = false;
-    let drawingPencil = false;
-    // Spray mode variables
-    let sprayMode = false;
-    let spraying = false;
-    let sprayX = 0, sprayY = 0;
-    let sprayInterval = null;
-    // Drawing color and thickness (shared by both tools)
-    let pencilColor = "#000000";
-    let pencilThickness = 2;
-
-    // Update pencil thickness when the slider is changed
-    document.getElementById('pencilThickness').addEventListener('input', function () {
-      pencilThickness = this.value;
-      document.getElementById('pencilThicknessLabel').textContent = "Pencil Thickness: " + pencilThickness;
-    });
-
-    // Pencil Brush Button and Color Wheel
-    document.getElementById('pencilBrushButton').addEventListener('click', function () {
-      pencilMode = !pencilMode;
-      if (pencilMode) {
-        // Deactivate spray mode if active
-        sprayMode = false;
-        document.getElementById('sprayBrushButton').style.backgroundColor = '';
-        document.getElementById('colorWheel').style.display = 'inline-block';
-        document.getElementById('pencilThickness').style.display = 'inline-block';
-        document.getElementById('pencilThicknessLabel').style.display = 'inline-block';
-        document.getElementById('pencilThicknessLabel').textContent = "Pencil Thickness: " + document.getElementById('pencilThickness').value;
-        this.style.backgroundColor = '#ccc';
-      } else {
-        document.getElementById('colorWheel').style.display = 'none';
-        document.getElementById('pencilThickness').style.display = 'none';
-        document.getElementById('pencilThicknessLabel').style.display = 'none';
-        this.style.backgroundColor = '';
-      }
-    });
-
-    // Spray Brush Button
-    document.getElementById('sprayBrushButton').addEventListener('click', function () {
-      sprayMode = !sprayMode;
-      if (sprayMode) {
-        // Deactivate pencil mode if active
-        pencilMode = false;
-        document.getElementById('pencilBrushButton').style.backgroundColor = '';
-        document.getElementById('colorWheel').style.display = 'inline-block';
-        document.getElementById('pencilThickness').style.display = 'inline-block';
-        document.getElementById('pencilThicknessLabel').style.display = 'inline-block';
-        document.getElementById('pencilThicknessLabel').textContent = "Pencil Thickness: " + document.getElementById('pencilThickness').value;
-        this.style.backgroundColor = '#ccc';
-      } else {
-        document.getElementById('colorWheel').style.display = 'none';
-        document.getElementById('pencilThickness').style.display = 'none';
-        document.getElementById('pencilThicknessLabel').style.display = 'none';
-        this.style.backgroundColor = '';
-      }
-    });
-
-    document.getElementById('colorWheel').addEventListener('change', function () {
-      pencilColor = this.value;
-    });
-
-    document.getElementById('download-btn').addEventListener('click', function () {
-      downloadImageDataAsImage('downloaded.png');
-    });
-
-    function downloadImageDataAsImage(filename) {
-      let imageData;
-      if (imageDataSetAfterDrag) {
-        imageData = offScreenCtx.getImageData(scaledStartX, scaledStartY, scaledWidth, scaledHeight);
-      } else {
-        imageData = offScreenCtx.getImageData(0, 0, img2.width, img2.height);
-      }
-      let canvasTemp = document.createElement('canvas');
-      if (imageDataSetAfterDrag) {
-        canvasTemp.width = scaledWidth;
-        canvasTemp.height = scaledHeight;
-      } else {
-        canvasTemp.width = img2.width;
-        canvasTemp.height = img2.height;
-      }
-      const ctxNew = canvasTemp.getContext('2d');
-      ctxNew.putImageData(imageData, 0, 0);
-      const imageURL = canvasTemp.toDataURL('image/png');
-      const a = document.createElement('a');
-      a.href = imageURL;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-    }
-
-    function linearScaleContrast(luminance) {
-      if (luminance < 25 || luminance > 230) {
-        return luminance;
-      }
-      return (0.7512 + (0.00195 * luminance)) * luminance;
-    }
-
-    document.getElementById('contrastButton').addEventListener('click', function () {
-      saveState();
-      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      const data = imageData.data;
-      for (let i = 0; i < data.length; i += 4) {
-        data[i] = linearScaleContrast(data[i]);
-        data[i + 1] = linearScaleContrast(data[i + 1]);
-        data[i + 2] = linearScaleContrast(data[i + 2]);
-      }
-      ctx.putImageData(imageData, 0, 0);
-      img.src = canvas.toDataURL();
-
-      const imageData2 = offScreenCtx.getImageData(0, 0, offScreenCanvas.width, offScreenCanvas.height);
-      const data2 = imageData2.data;
-      for (let i = 0; i < data2.length; i += 4) {
-        data2[i] = linearScaleContrast(data2[i]);
-        data2[i + 1] = linearScaleContrast(data2[i + 1]);
-        data2[i + 2] = linearScaleContrast(data2[i + 2]);
-      }
-      offScreenCtx.putImageData(imageData2, 0, 0);
-      img2.src = offScreenCanvas.toDataURL();
-      if (histCoords) {
-        createHistogram(histCoords.startX, histCoords.startY, histCoords.width, histCoords.height);
-      }
-    });
-
-    document.getElementById('grayscaleButton').addEventListener('click', function () {
-      saveState();
-      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      const data = imageData.data;
-      for (let i = 0; i < data.length; i += 4) {
-        const red = data[i];
-        const green = data[i + 1];
-        const blue = data[i + 2];
-        const luminance = 0.299 * red + 0.587 * green + 0.114 * blue;
-        data[i] = data[i + 1] = data[i + 2] = luminance;
-      }
-      ctx.putImageData(imageData, 0, 0);
-      img.src = canvas.toDataURL();
-
-      const imageData2 = offScreenCtx.getImageData(0, 0, offScreenCanvas.width, offScreenCanvas.height);
-      const data2 = imageData2.data;
-      for (let i = 0; i < data2.length; i += 4) {
-        const red = data2[i];
-        const green = data2[i + 1];
-        const blue = data2[i + 2];
-        const luminance = 0.299 * red + 0.587 * green + 0.114 * blue;
-        data2[i] = data2[i + 1] = data2[i + 2] = luminance;
-      }
-      offScreenCtx.putImageData(imageData2, 0, 0);
-      img2.src = offScreenCanvas.toDataURL();
-      if (histCoords) {
-        createHistogram(histCoords.startX, histCoords.startY, histCoords.width, histCoords.height);
-      }
-    });
-
-    document.getElementById('lightenButton').addEventListener('click', function () {
-      saveState();
-      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      const data = imageData.data;
-      for (let i = 0; i < data.length; i += 4) {
-        data[i] = data[i] * 1.1;
-        data[i + 1] = data[i + 1] * 1.1;
-        data[i + 2] = data[i + 2] * 1.1;
-      }
-      ctx.putImageData(imageData, 0, 0);
-      img.src = canvas.toDataURL();
-
-      const imageData2 = offScreenCtx.getImageData(0, 0, offScreenCanvas.width, offScreenCanvas.height);
-      const data2 = imageData2.data;
-      for (let i = 0; i < data2.length; i += 4) {
-        data2[i] = data2[i] * 1.1;
-        data2[i + 1] = data2[i + 1] * 1.1;
-        data2[i + 2] = data2[i + 2] * 1.1;
-      }
-      offScreenCtx.putImageData(imageData2, 0, 0);
-      img2.src = offScreenCanvas.toDataURL();
-      if (histCoords) {
-        createHistogram(histCoords.startX, histCoords.startY, histCoords.width, histCoords.height);
-      }
-    });
-
-    document.getElementById('darkenButton').addEventListener('click', function () {
-      saveState();
-      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      const data = imageData.data;
-      for (let i = 0; i < data.length; i += 4) {
-        data[i] *= 0.9;
-        data[i + 1] *= 0.9;
-        data[i + 2] *= 0.9;
-      }
-      ctx.putImageData(imageData, 0, 0);
-      img.src = canvas.toDataURL();
-
-      const imageData2 = offScreenCtx.getImageData(0, 0, offScreenCanvas.width, offScreenCanvas.height);
-      const data2 = imageData2.data;
-      for (let i = 0; i < data2.length; i += 4) {
-        data2[i] *= 0.9;
-        data2[i + 1] *= 0.9;
-        data2[i + 2] *= 0.9;
-      }
-      offScreenCtx.putImageData(imageData2, 0, 0);
-      img2.src = offScreenCanvas.toDataURL();
-      if (histCoords) {
-        createHistogram(histCoords.startX, histCoords.startY, histCoords.width, histCoords.height);
-      }
-    });
-
-    // Spray brush helper: draws a number of small dots in a circular region around (x, y)
-    function sprayAt(x, y) {
-      const density = 30; // dots per interval
-      const radius = pencilThickness; // use pencilThickness as the spray radius
-      for (let i = 0; i < density; i++) {
-        const angle = Math.random() * 2 * Math.PI;
-        const distance = Math.random() * radius;
-        const offsetX = Math.cos(angle) * distance;
-        const offsetY = Math.sin(angle) * distance;
-        ctx.fillStyle = pencilColor;
-        ctx.fillRect(x + offsetX, y + offsetY, 1, 1);
-      }
-    }
-
-    // Canvas Mouse Events
-    canvas.onmousedown = function (e) {
-      let { mouseX, mouseY } = adjustMouseCoordinates(e);
-      if (pencilMode) {
-        drawingPencil = true;
-        lastX = mouseX;
-        lastY = mouseY;
-        ctx.beginPath();
-        ctx.moveTo(lastX, lastY);
-      } else if (sprayMode) {
-        spraying = true;
-        sprayX = mouseX;
-        sprayY = mouseY;
-        sprayInterval = setInterval(() => sprayAt(sprayX, sprayY), 50);
-      } else {
-        startX = mouseX;
-        startY = mouseY;
-        isDragging = true;
-      }
-    };
-
-    canvas.onmousemove = function (e) {
-      let { mouseX, mouseY } = adjustMouseCoordinates(e);
-      if (pencilMode) {
-        if (!drawingPencil) return;
-        ctx.strokeStyle = pencilColor;
-        ctx.lineWidth = pencilThickness;
-        ctx.lineTo(mouseX, mouseY);
-        ctx.stroke();
-        lastX = mouseX;
-        lastY = mouseY;
-      } else if (sprayMode && spraying) {
-        sprayX = mouseX;
-        sprayY = mouseY;
-      } else if (isDragging) {
-        const width = mouseX - startX;
-        const height = mouseY - startY;
-        const overlayCtx = overlayCanvas.getContext('2d', { willReadFrequently: true });
-        overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
-        overlayCtx.beginPath();
-        const lineWidth = 2;
-        overlayCtx.rect(startX - lineWidth, startY - lineWidth, width + lineWidth * 2, height + lineWidth * 2);
-        overlayCtx.strokeStyle = 'red';
-        overlayCtx.lineWidth = lineWidth;
-        overlayCtx.stroke();
-      }
-    };
-
-    let scaledHeight, scaledWidth, scaledStartX, scaledStartY;
-    canvas.onmouseup = function (e) {
-      if (pencilMode) {
-        drawingPencil = false;
-        saveState();
-      } else if (sprayMode) {
-        spraying = false;
-        clearInterval(sprayInterval);
-        saveState();
-      } else {
-        isDragging = false;
-        let { mouseX, mouseY } = adjustMouseCoordinates(e);
-        const width = mouseX - startX;
-        const height = mouseY - startY;
-        histCoords = { startX, startY, width, height };
-        scaledStartX = Math.round(startX * canvasToImageScale);
-        scaledStartY = Math.round(startY * canvasToImageScale);
-        scaledWidth = Math.round(width * canvasToImageScale);
-        scaledHeight = Math.round(height * canvasToImageScale);
-        createHistogram(0, 0, width, height);
-        imageDataSetAfterDrag = true;
-      }
-    };
-
-    function adjustMouseCoordinates(e) {
-      let mouseX = e.offsetX;
-      let mouseY = e.offsetY;
-      return { mouseX, mouseY };
-    }
-
-    // Touch events with pencil/spray support
-    canvas.addEventListener('touchstart', function (e) {
-      e.preventDefault();
-      const touch = e.touches[0];
-      const { mouseX, mouseY } = adjustTouchCoordinates(touch);
-      if (pencilMode) {
-        drawingPencil = true;
-        lastX = mouseX;
-        lastY = mouseY;
-        ctx.beginPath();
-        ctx.moveTo(lastX, lastY);
-      } else if (sprayMode) {
-        spraying = true;
-        sprayX = mouseX;
-        sprayY = mouseY;
-        sprayInterval = setInterval(() => sprayAt(sprayX, sprayY), 50);
-      } else {
-        startX = mouseX;
-        startY = mouseY;
-        isDragging = true;
-      }
-    });
-
-    canvas.addEventListener('touchmove', function (e) {
-      e.preventDefault();
-      const touch = e.touches[0];
-      const { mouseX, mouseY } = adjustTouchCoordinates(touch);
-      if (pencilMode) {
-        if (!drawingPencil) return;
-        ctx.strokeStyle = pencilColor;
-        ctx.lineWidth = pencilThickness;
-        ctx.lineTo(mouseX, mouseY);
-        ctx.stroke();
-        lastX = mouseX;
-        lastY = mouseY;
-      } else if (sprayMode && spraying) {
-        sprayX = mouseX;
-        sprayY = mouseY;
-      } else if (isDragging) {
-        const width = mouseX - startX;
-        const height = mouseY - startY;
-        const overlayCtx = overlayCanvas.getContext('2d', { willReadFrequently: true });
-        overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
-        overlayCtx.beginPath();
-        const lineWidth = 2;
-        overlayCtx.rect(startX - lineWidth, startY - lineWidth, width + lineWidth * 2, height + lineWidth * 2);
-        overlayCtx.strokeStyle = 'red';
-        overlayCtx.lineWidth = lineWidth;
-        overlayCtx.stroke();
-      }
-    });
-
-    canvas.addEventListener('touchend', function (e) {
-      e.preventDefault();
-      if (pencilMode) {
-        drawingPencil = false;
-        saveState();
-      } else if (sprayMode) {
-        spraying = false;
-        clearInterval(sprayInterval);
-        saveState();
-      } else {
-        isDragging = false;
-        const touch = e.changedTouches[0];
-        const { mouseX, mouseY } = adjustTouchCoordinates(touch);
-        const width = mouseX - startX;
-        const height = mouseY - startY;
-        histCoords = { startX, startY, width, height };
-        scaledStartX = Math.round(startX * canvasToImageScale);
-        scaledStartY = Math.round(startY * canvasToImageScale);
-        scaledWidth = Math.round(width * canvasToImageScale);
-        scaledHeight = Math.round(height * canvasToImageScale);
-        createHistogram(0, 0, width, height);
-        imageDataSetAfterDrag = true;
-      }
-    });
-
-    function adjustTouchCoordinates(touch) {
-      const rect = canvas.getBoundingClientRect();
-      let mouseX = touch.clientX - rect.left;
-      let mouseY = touch.clientY - rect.top;
-      return { mouseX, mouseY };
-    }
-
-    function addOverlay() {
-      if (overlayCanvas && document.body.contains(overlayCanvas)) {
-        document.body.removeChild(overlayCanvas);
-      }
-      overlayCanvas = document.createElement('canvas');
-      overlayCanvas.width = canvas.width;
-      overlayCanvas.height = canvas.height;
-      overlayCanvas.style.position = 'absolute';
-      overlayCanvas.style.top = canvas.offsetTop + 'px';
-      overlayCanvas.style.left = canvas.offsetLeft + 'px';
-      overlayCanvas.style.pointerEvents = 'none';
-      document.body.appendChild(overlayCanvas);
-      document.getElementById('fileUploader').value = '';
-    }
-
-    function createHistogram(x, y, width, height) {
-      if (width === 0 || height === 0) {
-        return;
-      }
-      imageData = ctx.getImageData(x, y, width, height);
-      computeHistogram(this.checked);
-    }
-
-    function computeHistogram(isColor = false) {
-      if (isColor !== null && isColor !== undefined) {
-        showColorHistogram = isColor;
-      }
-      if (!imageData) {
-        return;
-      }
-      const data = imageData.data;
-      if (!showColorHistogram) {
-        let luminanceHistogram = new Array(256).fill(0);
-        for (let i = 0; i < data.length; i += 4) {
-          const r = data[i];
-          const g = data[i + 1];
-          const b = data[i + 2];
-          const luminance = 0.299 * r + 0.587 * g + 0.114 * b;
-          luminanceHistogram[Math.floor(luminance)]++;
-        }
-        displayHistogram(luminanceHistogram);
-      } else {
-        let luminanceHistogramR = new Array(256).fill(0);
-        let luminanceHistogramG = new Array(256).fill(0);
-        let luminanceHistogramB = new Array(256).fill(0);
-        for (let i = 0; i < data.length; i += 4) {
-          const r = data[i];
-          const g = data[i + 1];
-          const b = data[i + 2];
-          luminanceHistogramR[r]++;
-          luminanceHistogramG[g]++;
-          luminanceHistogramB[b]++;
-        }
-        displayColorHistogram(luminanceHistogramR, luminanceHistogramG, luminanceHistogramB);
-      }
-    }
-
-    function displayHistogram(histogram) {
-      histogramElement.innerHTML = '';
-      histogramElementR.innerHTML = '';
-      histogramElementG.innerHTML = '';
-      histogramElementB.innerHTML = '';
-      histogramElement.style.height = '100px';
-      histogramElement.style.width = 'max(50%, 500px)';
-      histogramElementR.style.height = '';
-      histogramElementR.style.width = '';
-      histogramElementG.style.height = '';
-      histogramElementG.style.width = '';
-      histogramElementB.style.height = '';
-      histogramElementB.style.width = '';
-      setTimeout(() => {
-        const computedStyle = window.getComputedStyle(histogramElement);
-        let computedWidth = computedStyle.width;
-        if (computedWidth.includes('px')) {
-          computedWidth = computedWidth.replace('px', '');
-        }
-        computedWidth = Number(computedWidth);
-        let emd = 0;
-        for (let i = 1; i < histogram.length; ++i) {
-          emd += Math.abs(histogram[i] - histogram[i - 1]);
-        }
-        console.log(emd);
-        const maxCount = Math.max(...histogram);
-        histogram.forEach((count, i) => {
-          const bar = document.createElement('div');
-          bar.style.width = `${computedWidth / 255}px`;
-          bar.style.height = `${(count / maxCount) * 100}%`;
-          bar.style.backgroundColor = 'black';
-          bar.style.display = 'inline-block';
-          histogramElement.appendChild(bar);
+                        if (!originalWidth && !originalHeight) {
+                            originalWidth = img.width;
+                            originalHeight = img.height;
+                            offScreenCanvas.width = originalWidth;
+                            offScreenCanvas.height = originalHeight;
+                            offScreenCtx.drawImage(img, 0, 0);
+                            canvasToImageScale = img.width / canvas.width;
+                        }
+                        addOverlay();
+                    };
+                };
+                reader.readAsDataURL(file);
+            }
         });
-      }, 0);
-    }
 
-    function displayColorHistogram(histogramR, histogramG, histogramB) {
-      histogramElement.innerHTML = '';
-      histogramElementR.innerHTML = '';
-      histogramElementG.innerHTML = '';
-      histogramElementB.innerHTML = '';
-      histogramElement.style.height = '';
-      histogramElement.style.width = '';
-      histogramElementR.style.height = '100px';
-      histogramElementR.style.width = 'max(50%, 500px)';
-      histogramElementG.style.height = '100px';
-      histogramElementG.style.width = 'max(50%, 500px)';
-      histogramElementB.style.height = '100px';
-      histogramElementB.style.width = 'max(50%, 500px)';
-      setTimeout(() => {
-        const computedStyle = window.getComputedStyle(histogramElementR);
-        let computedWidth = computedStyle.width;
-        if (computedWidth.includes('px')) {
-          computedWidth = computedWidth.replace('px', '');
+        function applyTransformations() {
+            applyTransformationsToCanvas(ctx, canvas, img);
+            img.src = canvas.toDataURL();
+            applyTransformationsToCanvas(offScreenCtx, offScreenCanvas, img2);
+            img2.src = offScreenCanvas.toDataURL();
+            if (histCoords) {
+                createHistogram(histCoords.startX, histCoords.startY, histCoords.width, histCoords.height);
+            }
         }
-        computedWidth = Number(computedWidth);
-        const maxCountR = Math.max(...histogramR);
-        histogramR.forEach((count, i) => {
-          const bar = document.createElement('div');
-          bar.style.width = `${computedWidth / 255}px`;
-          bar.style.height = `${(count / maxCountR) * 100}%`;
-          bar.style.backgroundColor = 'red';
-          bar.style.display = 'inline-block';
-          histogramElementR.appendChild(bar);
+
+        function applyTransformationsToCanvas(context, cnv, image) {
+            context.clearRect(0, 0, cnv.width, cnv.height);
+            context.setTransform(1, 0, 0, 1, 0, 0);
+            if (isFlippedHorizontally) {
+                context.translate(cnv.width, 0);
+                context.scale(-1, 1);
+            }
+            if (isFlippedVertically) {
+                context.translate(0, cnv.height);
+                context.scale(1, -1);
+            }
+            context.drawImage(image, 0, 0, cnv.width, cnv.height);
+        }
+
+        function flipImageHorizontally() {
+            saveState();
+            isFlippedHorizontally = !isFlippedHorizontally;
+            applyTransformations();
+        }
+
+        function flipImageVertically() {
+            saveState();
+            isFlippedVertically = !isFlippedVertically;
+            applyTransformations();
+        }
+
+        document.getElementById('flipButtonHorizontal').addEventListener('click', flipImageHorizontally);
+        document.getElementById('flipButton').addEventListener('click', flipImageVertically);
+
+        const rotateBtn = document.getElementById('rotateBtn');
+        rotateBtn.addEventListener('click', function () {
+            saveState();
+            angle += 45;
+            angle = angle % 360;
+            rotateCanvas(ctx, canvas, img, angle);
+            rotateCanvas(offScreenCtx, offScreenCanvas, img2, angle);
+            if (histCoords) {
+                createHistogram(histCoords.startX, histCoords.startY, histCoords.width, histCoords.height);
+            }
         });
-        const maxCountG = Math.max(...histogramG);
-        histogramG.forEach((count, i) => {
-          const bar = document.createElement('div');
-          bar.style.width = `${computedWidth / 255}px`;
-          bar.style.height = `${(count / maxCountG) * 100}%`;
-          bar.style.backgroundColor = 'green';
-          bar.style.display = 'inline-block';
-          histogramElementG.appendChild(bar);
+
+        function rotateCanvas(context, cnv, image, angle) {
+            context.clearRect(0, 0, cnv.width, cnv.height);
+            context.save();
+            context.translate(cnv.width / 2, cnv.height / 2);
+            context.rotate(angle * Math.PI / 180);
+            context.drawImage(image, -cnv.width / 2, -cnv.height / 2, cnv.width, cnv.height);
+            context.restore();
+        }
+
+        // Variables for selection and drawing
+        let startX, startY, isDragging = false;
+        // Pencil mode variables
+        let pencilMode = false;
+        let drawingPencil = false;
+        // Spray mode variables
+        let sprayMode = false;
+        let spraying = false;
+        let sprayX = 0, sprayY = 0;
+        let sprayInterval = null;
+        // Drawing color and thickness (shared by both tools)
+        let pencilColor = "#000000";
+        let pencilThickness = 2;
+
+        // Update pencil thickness when the slider is changed
+        document.getElementById('pencilThickness').addEventListener('input', function () {
+            pencilThickness = this.value;
+            document.getElementById('pencilThicknessLabel').textContent = "Pencil Thickness: " + pencilThickness;
         });
-        const maxCountB = Math.max(...histogramB);
-        histogramB.forEach((count, i) => {
-          const bar = document.createElement('div');
-          bar.style.width = `${computedWidth / 255}px`;
-          bar.style.height = `${(count / maxCountB) * 100}%`;
-          bar.style.backgroundColor = 'blue';
-          bar.style.display = 'inline-block';
-          histogramElementB.appendChild(bar);
+
+        // Pencil Brush Button and Color Wheel
+        document.getElementById('pencilBrushButton').addEventListener('click', function () {
+            pencilMode = !pencilMode;
+            if (pencilMode) {
+                // Deactivate spray mode if active
+                sprayMode = false;
+                document.getElementById('sprayBrushButton').style.backgroundColor = '';
+                document.getElementById('colorWheel').style.display = 'inline-block';
+                document.getElementById('pencilThickness').style.display = 'inline-block';
+                document.getElementById('pencilThicknessLabel').style.display = 'inline-block';
+                document.getElementById('pencilThicknessLabel').textContent = "Pencil Thickness: " + document.getElementById('pencilThickness').value;
+                this.style.backgroundColor = '#ccc';
+            } else {
+                document.getElementById('colorWheel').style.display = 'none';
+                document.getElementById('pencilThickness').style.display = 'none';
+                document.getElementById('pencilThicknessLabel').style.display = 'none';
+                this.style.backgroundColor = '';
+            }
         });
-      }, 0);
-    }
-  </script>
+
+        // Spray Brush Button
+        document.getElementById('sprayBrushButton').addEventListener('click', function () {
+            sprayMode = !sprayMode;
+            if (sprayMode) {
+                // Deactivate pencil mode if active
+                pencilMode = false;
+                document.getElementById('pencilBrushButton').style.backgroundColor = '';
+                document.getElementById('colorWheel').style.display = 'inline-block';
+                document.getElementById('pencilThickness').style.display = 'inline-block';
+                document.getElementById('pencilThicknessLabel').style.display = 'inline-block';
+                document.getElementById('pencilThicknessLabel').textContent = "Pencil Thickness: " + document.getElementById('pencilThickness').value;
+                this.style.backgroundColor = '#ccc';
+            } else {
+                document.getElementById('colorWheel').style.display = 'none';
+                document.getElementById('pencilThickness').style.display = 'none';
+                document.getElementById('pencilThicknessLabel').style.display = 'none';
+                this.style.backgroundColor = '';
+            }
+        });
+
+        document.getElementById('colorWheel').addEventListener('change', function () {
+            pencilColor = this.value;
+        });
+
+        document.getElementById('download-btn').addEventListener('click', function () {
+            downloadImageDataAsImage('downloaded.png');
+        });
+
+        function downloadImageDataAsImage(filename) {
+            let imageData;
+            if (imageDataSetAfterDrag) {
+                imageData = offScreenCtx.getImageData(scaledStartX, scaledStartY, scaledWidth, scaledHeight);
+            } else {
+                imageData = offScreenCtx.getImageData(0, 0, img2.width, img2.height);
+            }
+            let canvasTemp = document.createElement('canvas');
+            if (imageDataSetAfterDrag) {
+                canvasTemp.width = scaledWidth;
+                canvasTemp.height = scaledHeight;
+            } else {
+                canvasTemp.width = img2.width;
+                canvasTemp.height = img2.height;
+            }
+            const ctxNew = canvasTemp.getContext('2d');
+            ctxNew.putImageData(imageData, 0, 0);
+            const imageURL = canvasTemp.toDataURL('image/png');
+            const a = document.createElement('a');
+            a.href = imageURL;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+
+        function linearScaleContrast(luminance) {
+            if (luminance < 25 || luminance > 230) {
+                return luminance;
+            }
+            return (0.7512 + (0.00195 * luminance)) * luminance;
+        }
+
+        document.getElementById('contrastButton').addEventListener('click', function () {
+            saveState();
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const data = imageData.data;
+            for (let i = 0; i < data.length; i += 4) {
+                data[i] = linearScaleContrast(data[i]);
+                data[i + 1] = linearScaleContrast(data[i + 1]);
+                data[i + 2] = linearScaleContrast(data[i + 2]);
+            }
+            ctx.putImageData(imageData, 0, 0);
+            img.src = canvas.toDataURL();
+
+            const imageData2 = offScreenCtx.getImageData(0, 0, offScreenCanvas.width, offScreenCanvas.height);
+            const data2 = imageData2.data;
+            for (let i = 0; i < data2.length; i += 4) {
+                data2[i] = linearScaleContrast(data2[i]);
+                data2[i + 1] = linearScaleContrast(data2[i + 1]);
+                data2[i + 2] = linearScaleContrast(data2[i + 2]);
+            }
+            offScreenCtx.putImageData(imageData2, 0, 0);
+            img2.src = offScreenCanvas.toDataURL();
+            if (histCoords) {
+                createHistogram(histCoords.startX, histCoords.startY, histCoords.width, histCoords.height);
+            }
+        });
+
+        document.getElementById('grayscaleButton').addEventListener('click', function () {
+            saveState();
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const data = imageData.data;
+            for (let i = 0; i < data.length; i += 4) {
+                const red = data[i];
+                const green = data[i + 1];
+                const blue = data[i + 2];
+                const luminance = 0.299 * red + 0.587 * green + 0.114 * blue;
+                data[i] = data[i + 1] = data[i + 2] = luminance;
+            }
+            ctx.putImageData(imageData, 0, 0);
+            img.src = canvas.toDataURL();
+
+            const imageData2 = offScreenCtx.getImageData(0, 0, offScreenCanvas.width, offScreenCanvas.height);
+            const data2 = imageData2.data;
+            for (let i = 0; i < data2.length; i += 4) {
+                const red = data2[i];
+                const green = data2[i + 1];
+                const blue = data2[i + 2];
+                const luminance = 0.299 * red + 0.587 * green + 0.114 * blue;
+                data2[i] = data2[i + 1] = data2[i + 2] = luminance;
+            }
+            offScreenCtx.putImageData(imageData2, 0, 0);
+            img2.src = offScreenCanvas.toDataURL();
+            if (histCoords) {
+                createHistogram(histCoords.startX, histCoords.startY, histCoords.width, histCoords.height);
+            }
+        });
+
+        document.getElementById('lightenButton').addEventListener('click', function () {
+            saveState();
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const data = imageData.data;
+            for (let i = 0; i < data.length; i += 4) {
+                data[i] = data[i] * 1.1;
+                data[i + 1] = data[i + 1] * 1.1;
+                data[i + 2] = data[i + 2] * 1.1;
+            }
+            ctx.putImageData(imageData, 0, 0);
+            img.src = canvas.toDataURL();
+
+            const imageData2 = offScreenCtx.getImageData(0, 0, offScreenCanvas.width, offScreenCanvas.height);
+            const data2 = imageData2.data;
+            for (let i = 0; i < data2.length; i += 4) {
+                data2[i] = data2[i] * 1.1;
+                data2[i + 1] = data2[i + 1] * 1.1;
+                data2[i + 2] = data2[i + 2] * 1.1;
+            }
+            offScreenCtx.putImageData(imageData2, 0, 0);
+            img2.src = offScreenCanvas.toDataURL();
+            if (histCoords) {
+                createHistogram(histCoords.startX, histCoords.startY, histCoords.width, histCoords.height);
+            }
+        });
+
+        document.getElementById('darkenButton').addEventListener('click', function () {
+            saveState();
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const data = imageData.data;
+            for (let i = 0; i < data.length; i += 4) {
+                data[i] *= 0.9;
+                data[i + 1] *= 0.9;
+                data[i + 2] *= 0.9;
+            }
+            ctx.putImageData(imageData, 0, 0);
+            img.src = canvas.toDataURL();
+
+            const imageData2 = offScreenCtx.getImageData(0, 0, offScreenCanvas.width, offScreenCanvas.height);
+            const data2 = imageData2.data;
+            for (let i = 0; i < data2.length; i += 4) {
+                data2[i] *= 0.9;
+                data2[i + 1] *= 0.9;
+                data2[i + 2] *= 0.9;
+            }
+            offScreenCtx.putImageData(imageData2, 0, 0);
+            img2.src = offScreenCanvas.toDataURL();
+            if (histCoords) {
+                createHistogram(histCoords.startX, histCoords.startY, histCoords.width, histCoords.height);
+            }
+        });
+
+        // Spray brush helper: draws a number of small dots in a circular region around (x, y)
+        function sprayAt(x, y) {
+            const density = 30; // dots per interval
+            const radius = pencilThickness; // use pencilThickness as the spray radius
+            for (let i = 0; i < density; i++) {
+                const angle = Math.random() * 2 * Math.PI;
+                const distance = Math.random() * radius;
+                const offsetX = Math.cos(angle) * distance;
+                const offsetY = Math.sin(angle) * distance;
+                ctx.fillStyle = pencilColor;
+                ctx.fillRect(x + offsetX, y + offsetY, 1, 1);
+            }
+        }
+
+        // Canvas Mouse Events
+        canvas.onmousedown = function (e) {
+            let { mouseX, mouseY } = adjustMouseCoordinates(e);
+            if (pencilMode) {
+                saveState();
+                drawingPencil = true;
+                lastX = mouseX;
+                lastY = mouseY;
+                ctx.beginPath();
+                ctx.moveTo(lastX, lastY);
+            } else if (sprayMode) {
+                saveState();
+                spraying = true;
+                sprayX = mouseX;
+                sprayY = mouseY;
+                sprayInterval = setInterval(() => sprayAt(sprayX, sprayY), 50);
+            } else {
+                startX = mouseX;
+                startY = mouseY;
+                isDragging = true;
+            }
+        };
+
+        canvas.onmousemove = function (e) {
+            let { mouseX, mouseY } = adjustMouseCoordinates(e);
+            if (pencilMode) {
+                if (!drawingPencil) return;
+                ctx.strokeStyle = pencilColor;
+                ctx.lineWidth = pencilThickness;
+                ctx.lineTo(mouseX, mouseY);
+                ctx.stroke();
+                lastX = mouseX;
+                lastY = mouseY;
+            } else if (sprayMode && spraying) {
+                sprayX = mouseX;
+                sprayY = mouseY;
+            } else if (isDragging) {
+                const width = mouseX - startX;
+                const height = mouseY - startY;
+                const overlayCtx = overlayCanvas.getContext('2d', { willReadFrequently: true });
+                overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+                overlayCtx.beginPath();
+                const lineWidth = 2;
+                overlayCtx.rect(startX - lineWidth, startY - lineWidth, width + lineWidth * 2, height + lineWidth * 2);
+                overlayCtx.strokeStyle = 'red';
+                overlayCtx.lineWidth = lineWidth;
+                overlayCtx.stroke();
+            }
+        };
+
+        let scaledHeight, scaledWidth, scaledStartX, scaledStartY;
+        canvas.onmouseup = function (e) {
+            if (pencilMode) {
+                drawingPencil = false;
+                saveState();
+            } else if (sprayMode) {
+                spraying = false;
+                clearInterval(sprayInterval);
+                saveState();
+            } else {
+                isDragging = false;
+                let { mouseX, mouseY } = adjustMouseCoordinates(e);
+                const width = mouseX - startX;
+                const height = mouseY - startY;
+                histCoords = { startX, startY, width, height };
+                scaledStartX = Math.round(startX * canvasToImageScale);
+                scaledStartY = Math.round(startY * canvasToImageScale);
+                scaledWidth = Math.round(width * canvasToImageScale);
+                scaledHeight = Math.round(height * canvasToImageScale);
+                createHistogram(0, 0, width, height);
+                imageDataSetAfterDrag = true;
+            }
+        };
+
+        function adjustMouseCoordinates(e) {
+            let mouseX = e.offsetX;
+            let mouseY = e.offsetY;
+            return { mouseX, mouseY };
+        }
+
+        // Touch events with pencil/spray support
+        canvas.addEventListener('touchstart', function (e) {
+            e.preventDefault();
+            const touch = e.touches[0];
+            const { mouseX, mouseY } = adjustTouchCoordinates(touch);
+            if (pencilMode) {
+                drawingPencil = true;
+                lastX = mouseX;
+                lastY = mouseY;
+                ctx.beginPath();
+                ctx.moveTo(lastX, lastY);
+            } else if (sprayMode) {
+                spraying = true;
+                sprayX = mouseX;
+                sprayY = mouseY;
+                sprayInterval = setInterval(() => sprayAt(sprayX, sprayY), 50);
+            } else {
+                startX = mouseX;
+                startY = mouseY;
+                isDragging = true;
+            }
+        });
+
+        canvas.addEventListener('touchmove', function (e) {
+            e.preventDefault();
+            const touch = e.touches[0];
+            const { mouseX, mouseY } = adjustTouchCoordinates(touch);
+            if (pencilMode) {
+                if (!drawingPencil) return;
+                ctx.strokeStyle = pencilColor;
+                ctx.lineWidth = pencilThickness;
+                ctx.lineTo(mouseX, mouseY);
+                ctx.stroke();
+                lastX = mouseX;
+                lastY = mouseY;
+            } else if (sprayMode && spraying) {
+                sprayX = mouseX;
+                sprayY = mouseY;
+            } else if (isDragging) {
+                const width = mouseX - startX;
+                const height = mouseY - startY;
+                const overlayCtx = overlayCanvas.getContext('2d', { willReadFrequently: true });
+                overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+                overlayCtx.beginPath();
+                const lineWidth = 2;
+                overlayCtx.rect(startX - lineWidth, startY - lineWidth, width + lineWidth * 2, height + lineWidth * 2);
+                overlayCtx.strokeStyle = 'red';
+                overlayCtx.lineWidth = lineWidth;
+                overlayCtx.stroke();
+            }
+        });
+
+        canvas.addEventListener('touchend', function (e) {
+            e.preventDefault();
+            if (pencilMode) {
+                drawingPencil = false;
+                saveState();
+            } else if (sprayMode) {
+                spraying = false;
+                clearInterval(sprayInterval);
+                saveState();
+            } else {
+                isDragging = false;
+                const touch = e.changedTouches[0];
+                const { mouseX, mouseY } = adjustTouchCoordinates(touch);
+                const width = mouseX - startX;
+                const height = mouseY - startY;
+                histCoords = { startX, startY, width, height };
+                scaledStartX = Math.round(startX * canvasToImageScale);
+                scaledStartY = Math.round(startY * canvasToImageScale);
+                scaledWidth = Math.round(width * canvasToImageScale);
+                scaledHeight = Math.round(height * canvasToImageScale);
+                createHistogram(0, 0, width, height);
+                imageDataSetAfterDrag = true;
+            }
+        });
+
+        function adjustTouchCoordinates(touch) {
+            const rect = canvas.getBoundingClientRect();
+            let mouseX = touch.clientX - rect.left;
+            let mouseY = touch.clientY - rect.top;
+            return { mouseX, mouseY };
+        }
+
+        function addOverlay() {
+            if (overlayCanvas && document.body.contains(overlayCanvas)) {
+                document.body.removeChild(overlayCanvas);
+            }
+            overlayCanvas = document.createElement('canvas');
+            overlayCanvas.width = canvas.width;
+            overlayCanvas.height = canvas.height;
+            overlayCanvas.style.position = 'absolute';
+            overlayCanvas.style.top = canvas.offsetTop + 'px';
+            overlayCanvas.style.left = canvas.offsetLeft + 'px';
+            overlayCanvas.style.pointerEvents = 'none';
+            document.body.appendChild(overlayCanvas);
+            document.getElementById('fileUploader').value = '';
+        }
+
+        function createHistogram(x, y, width, height) {
+            if (width === 0 || height === 0) {
+                return;
+            }
+            imageData = ctx.getImageData(x, y, width, height);
+            computeHistogram(this.checked);
+        }
+
+        function computeHistogram(isColor = false) {
+            if (isColor !== null && isColor !== undefined) {
+                showColorHistogram = isColor;
+            }
+            if (!imageData) {
+                return;
+            }
+            const data = imageData.data;
+            if (!showColorHistogram) {
+                let luminanceHistogram = new Array(256).fill(0);
+                for (let i = 0; i < data.length; i += 4) {
+                    const r = data[i];
+                    const g = data[i + 1];
+                    const b = data[i + 2];
+                    const luminance = 0.299 * r + 0.587 * g + 0.114 * b;
+                    luminanceHistogram[Math.floor(luminance)]++;
+                }
+                displayHistogram(luminanceHistogram);
+            } else {
+                let luminanceHistogramR = new Array(256).fill(0);
+                let luminanceHistogramG = new Array(256).fill(0);
+                let luminanceHistogramB = new Array(256).fill(0);
+                for (let i = 0; i < data.length; i += 4) {
+                    const r = data[i];
+                    const g = data[i + 1];
+                    const b = data[i + 2];
+                    luminanceHistogramR[r]++;
+                    luminanceHistogramG[g]++;
+                    luminanceHistogramB[b]++;
+                }
+                displayColorHistogram(luminanceHistogramR, luminanceHistogramG, luminanceHistogramB);
+            }
+        }
+
+        function displayHistogram(histogram) {
+            histogramElement.innerHTML = '';
+            histogramElementR.innerHTML = '';
+            histogramElementG.innerHTML = '';
+            histogramElementB.innerHTML = '';
+            histogramElement.style.height = '100px';
+            histogramElement.style.width = 'max(50%, 500px)';
+            histogramElementR.style.height = '';
+            histogramElementR.style.width = '';
+            histogramElementG.style.height = '';
+            histogramElementG.style.width = '';
+            histogramElementB.style.height = '';
+            histogramElementB.style.width = '';
+            setTimeout(() => {
+                const computedStyle = window.getComputedStyle(histogramElement);
+                let computedWidth = computedStyle.width;
+                if (computedWidth.includes('px')) {
+                    computedWidth = computedWidth.replace('px', '');
+                }
+                computedWidth = Number(computedWidth);
+                let emd = 0;
+                for (let i = 1; i < histogram.length; ++i) {
+                    emd += Math.abs(histogram[i] - histogram[i - 1]);
+                }
+                console.log(emd);
+                const maxCount = Math.max(...histogram);
+                histogram.forEach((count, i) => {
+                    const bar = document.createElement('div');
+                    bar.style.width = `${computedWidth / 255}px`;
+                    bar.style.height = `${(count / maxCount) * 100}%`;
+                    bar.style.backgroundColor = 'black';
+                    bar.style.display = 'inline-block';
+                    histogramElement.appendChild(bar);
+                });
+            }, 0);
+        }
+
+        function displayColorHistogram(histogramR, histogramG, histogramB) {
+            histogramElement.innerHTML = '';
+            histogramElementR.innerHTML = '';
+            histogramElementG.innerHTML = '';
+            histogramElementB.innerHTML = '';
+            histogramElement.style.height = '';
+            histogramElement.style.width = '';
+            histogramElementR.style.height = '100px';
+            histogramElementR.style.width = 'max(50%, 500px)';
+            histogramElementG.style.height = '100px';
+            histogramElementG.style.width = 'max(50%, 500px)';
+            histogramElementB.style.height = '100px';
+            histogramElementB.style.width = 'max(50%, 500px)';
+            setTimeout(() => {
+                const computedStyle = window.getComputedStyle(histogramElementR);
+                let computedWidth = computedStyle.width;
+                if (computedWidth.includes('px')) {
+                    computedWidth = computedWidth.replace('px', '');
+                }
+                computedWidth = Number(computedWidth);
+                const maxCountR = Math.max(...histogramR);
+                histogramR.forEach((count, i) => {
+                    const bar = document.createElement('div');
+                    bar.style.width = `${computedWidth / 255}px`;
+                    bar.style.height = `${(count / maxCountR) * 100}%`;
+                    bar.style.backgroundColor = 'red';
+                    bar.style.display = 'inline-block';
+                    histogramElementR.appendChild(bar);
+                });
+                const maxCountG = Math.max(...histogramG);
+                histogramG.forEach((count, i) => {
+                    const bar = document.createElement('div');
+                    bar.style.width = `${computedWidth / 255}px`;
+                    bar.style.height = `${(count / maxCountG) * 100}%`;
+                    bar.style.backgroundColor = 'green';
+                    bar.style.display = 'inline-block';
+                    histogramElementG.appendChild(bar);
+                });
+                const maxCountB = Math.max(...histogramB);
+                histogramB.forEach((count, i) => {
+                    const bar = document.createElement('div');
+                    bar.style.width = `${computedWidth / 255}px`;
+                    bar.style.height = `${(count / maxCountB) * 100}%`;
+                    bar.style.backgroundColor = 'blue';
+                    bar.style.display = 'inline-block';
+                    histogramElementB.appendChild(bar);
+                });
+            }, 0);
+        }
+    </script>
 </body>
 
 </html>
