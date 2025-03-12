@@ -730,9 +730,9 @@
             if (file) {
                 const reader = new FileReader();
                 reader.onload = function (e) {
-                    img.src = e.target.result;  // Set image source to the file content
-                    img2.src = e.target.result; // Update img2 as well
-                    undoStack = []; // Clear undo history on new image load
+                    img.src = e.target.result;
+                    img2.src = e.target.result;
+                    undoStack = []; // clear undo history on new image load
 
                     img.onload = function () {
                         let scaleFactor = Math.min(1024 / img.width, 1024 / img.height, 1);
@@ -740,14 +740,16 @@
                         canvas.height = img.height * scaleFactor;
                         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-                        if (!originalWidth && !originalHeight) {
-                            originalWidth = img.width;
-                            originalHeight = img.height;
-                            offScreenCanvas.width = originalWidth;
-                            offScreenCanvas.height = originalHeight;
-                            offScreenCtx.drawImage(img, 0, 0);
-                            canvasToImageScale = img.width / canvas.width;
-                        }
+                        // Always update the offScreenCanvas with the new image dimensions
+                        originalWidth = img.width;
+                        originalHeight = img.height;
+                        offScreenCanvas.width = originalWidth;
+                        offScreenCanvas.height = originalHeight;
+                        offScreenCtx.drawImage(img, 0, 0);
+
+                        // Update the scaling factor for coordinate adjustments
+                        canvasToImageScale = img.width / canvas.width;
+
                         addOverlay();
                     };
                 };
@@ -1025,16 +1027,21 @@
         });
 
         // Spray brush helper: draws a number of small dots in a circular region around (x, y)
-        function sprayAt(x, y) {
-            const density = 30; // dots per interval
-            const radius = pencilThickness; // use pencilThickness as the spray radius
+        function sprayAt(x, y, context, offscreenContext) {
+            if (!spraying) {
+                return;
+            }
+            const density = 30;
+            const radius = pencilThickness;
             for (let i = 0; i < density; i++) {
                 const angle = Math.random() * 2 * Math.PI;
                 const distance = Math.random() * radius;
                 const offsetX = Math.cos(angle) * distance;
                 const offsetY = Math.sin(angle) * distance;
-                ctx.fillStyle = pencilColor;
-                ctx.fillRect(x + offsetX, y + offsetY, 1, 1);
+                context.fillStyle = pencilColor;
+                context.fillRect(x + offsetX, y + offsetY, 1, 1);
+                offscreenContext.fillStyle = pencilColor;
+                offscreenContext.fillRect((x * canvasToImageScale) + offsetX, (y * canvasToImageScale) + offsetY, 1, 1);
             }
         }
 
@@ -1048,12 +1055,15 @@
                 lastY = mouseY;
                 ctx.beginPath();
                 ctx.moveTo(lastX, lastY);
+                // Begin a corresponding path on the offScreen canvas (scaled)
+                offScreenCtx.beginPath();
+                offScreenCtx.moveTo(lastX * canvasToImageScale, lastY * canvasToImageScale);
             } else if (sprayMode) {
                 saveState();
                 spraying = true;
                 sprayX = mouseX;
                 sprayY = mouseY;
-                sprayInterval = setInterval(() => sprayAt(sprayX, sprayY), 50);
+                sprayInterval = setInterval(() => sprayAt(sprayX, sprayY, ctx, offScreenCtx), 50);
             } else {
                 startX = mouseX;
                 startY = mouseY;
@@ -1069,6 +1079,11 @@
                 ctx.lineWidth = pencilThickness;
                 ctx.lineTo(mouseX, mouseY);
                 ctx.stroke();
+                // Also draw on the offScreen canvas using scaled coordinates:
+                offScreenCtx.strokeStyle = pencilColor;
+                offScreenCtx.lineWidth = pencilThickness;
+                offScreenCtx.lineTo(mouseX * canvasToImageScale, mouseY * canvasToImageScale);
+                offScreenCtx.stroke();
                 lastX = mouseX;
                 lastY = mouseY;
             } else if (sprayMode && spraying) {
@@ -1133,7 +1148,7 @@
                 spraying = true;
                 sprayX = mouseX;
                 sprayY = mouseY;
-                sprayInterval = setInterval(() => sprayAt(sprayX, sprayY), 50);
+                sprayInterval = setInterval(() => sprayAt(sprayX, sprayY, ctx, offScreenCtx), 50);
             } else {
                 startX = mouseX;
                 startY = mouseY;
