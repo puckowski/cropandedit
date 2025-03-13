@@ -1089,7 +1089,7 @@
                 ctx.stroke();
                 // Also draw on the offScreen canvas using scaled coordinates:
                 offScreenCtx.strokeStyle = pencilColor;
-                offScreenCtx.lineWidth = pencilThickness;
+                offScreenCtx.lineWidth = pencilThickness * canvasToImageScale;
                 offScreenCtx.lineTo(mouseX * canvasToImageScale, mouseY * canvasToImageScale);
                 offScreenCtx.stroke();
                 lastX = mouseX;
