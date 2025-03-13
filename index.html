@@ -1033,6 +1033,8 @@
             }
             const density = 30;
             const radius = pencilThickness;
+            const offscreenDensity = 30 * canvasToImageScale;
+            const offscreenRadius = pencilThickness * canvasToImageScale;
             for (let i = 0; i < density; i++) {
                 const angle = Math.random() * 2 * Math.PI;
                 const distance = Math.random() * radius;
@@ -1040,8 +1042,14 @@
                 const offsetY = Math.sin(angle) * distance;
                 context.fillStyle = pencilColor;
                 context.fillRect(x + offsetX, y + offsetY, 1, 1);
+            }
+            for (let i = 0; i < offscreenDensity; i++) {
+                const angle = Math.random() * 2 * Math.PI;
+                const offscreenDistance = Math.random() * offscreenRadius;
+                const offscreenOffsetX = Math.cos(angle) * offscreenDistance;
+                const offscreenOffsetY = Math.sin(angle) * offscreenDistance;
                 offscreenContext.fillStyle = pencilColor;
-                offscreenContext.fillRect((x * canvasToImageScale) + offsetX, (y * canvasToImageScale) + offsetY, 1, 1);
+                offscreenContext.fillRect((x * canvasToImageScale) + offscreenOffsetX, (y * canvasToImageScale) + offscreenOffsetY, 1, 1);
             }
         }
 
