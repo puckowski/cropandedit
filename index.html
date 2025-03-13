@@ -192,7 +192,8 @@
         input[type=file]::file-selector-button {
             background-color: var(--background600);
             border: none;
-            padding: 8px
+            padding: 8px;
+            color: var(--foreground500);
         }
 
         button,
@@ -540,12 +541,12 @@
         }
 
         :root {
-            --foreground500: #161f27;
-            --foreground600: #0f151b;
-            --background500: #ffffff;
-            --background550: #f0f0ff;
-            --background600: #e0e0e0;
-            --background700: #c7c7c7;
+            --foreground500: #7a7a7a;
+            --foreground600: #7a7a7a;
+            --background500: rgb(29, 29, 29);
+            --background550: rgb(29, 29, 29);
+            --background600: rgb(29, 29, 29);
+            --background700: rgb(29, 29, 29);
             --primary500: #0172ad;
             --primary600: #014a85;
             --secondary500: #ffe1a8;
@@ -567,11 +568,21 @@
             word-wrap: break-word;
             color: var(--foreground500);
             background: var(--background500);
-            text-rendering: optimizeLegibility
+            text-rendering: optimizeLegibility;
+            background: rgb(45, 45, 45);
         }
 
         .tools-container {
             padding: 4px 0px 4px 0px;
+            display: flex;
+            justify-content: space-evenly;
+            width: 100%;
+        }
+
+        .canvas-container {
+            display: flex;
+            justify-content: space-evenly;
+            width: 100%;
         }
     </style>
     <meta name="description"
@@ -586,7 +597,9 @@
 </head>
 
 <body>
-    <canvas id="canvas"></canvas>
+    <div class="canvas-container">
+        <canvas id="canvas"></canvas>
+    </div>
     <div class="tools-container">
         <input type="file" id="fileUploader" accept="image/*" />
     </div>
@@ -848,12 +861,10 @@
                 document.getElementById('pencilThickness').style.display = 'inline-block';
                 document.getElementById('pencilThicknessLabel').style.display = 'inline-block';
                 document.getElementById('pencilThicknessLabel').textContent = "Pencil Thickness: " + document.getElementById('pencilThickness').value;
-                this.style.backgroundColor = '#ccc';
             } else {
                 document.getElementById('colorWheel').style.display = 'none';
                 document.getElementById('pencilThickness').style.display = 'none';
                 document.getElementById('pencilThicknessLabel').style.display = 'none';
-                this.style.backgroundColor = '';
             }
         });
 
