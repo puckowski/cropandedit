@@ -575,14 +575,30 @@
         .tools-container {
             padding: 4px 0px 4px 0px;
             display: flex;
-            justify-content: space-evenly;
+            justify-content: center;
+            column-gap: 5px;
             width: 100%;
         }
 
         .canvas-container {
             display: flex;
-            justify-content: space-evenly;
+            justify-content: center;
             width: 100%;
+        }
+
+        .histogram-container {
+            display: flex;
+            justify-content: center;
+        }
+
+        .color-histogram-container {
+            display: flex;
+            flex-direction: column;
+            /* Stack children vertically */
+            justify-content: center;
+            /* Center them vertically within the container */
+            align-items: center;
+            /* Center them horizontally */
         }
     </style>
     <meta name="description"
@@ -613,6 +629,8 @@
         <button id="contrastButton">Increase Contrast</button>
         <button id="download-btn">Download</button>
         <button id="undoButton">Undo</button>
+        <!-- New Clear Selection Button -->
+        <button id="clearSelectionBtn">Clear Selection</button>
         <!-- Pencil Brush Tool -->
         <button id="pencilBrushButton">Pencil Brush</button>
         <!-- Spray Brush Tool -->
@@ -629,8 +647,10 @@
         </label>
     </div>
 
-    <div id="histogram"></div>
-    <div>
+    <div class="histogram-container">
+        <div id="histogram"></div>
+    </div>
+    <div class="color-histogram-container">
         <div id="histogramr"></div>
         <div id="histogramg"></div>
         <div id="histogramb"></div>
@@ -706,6 +726,16 @@
             };
             offScreenImage.src = state.offScreenDataURL;
         }
+
+        document.getElementById('clearSelectionBtn').addEventListener('click', function () {
+            if (overlayCanvas) {
+                const overlayCtx = overlayCanvas.getContext('2d', { willReadFrequently: true });
+                overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+            }
+            // Optionally, reset selection state variables
+            histCoords = null;
+            imageDataSetAfterDrag = false;
+        });
 
         // Undo button event listener
         document.getElementById('undoButton').addEventListener('click', function () {
@@ -1299,7 +1329,7 @@
             histogramElementG.innerHTML = '';
             histogramElementB.innerHTML = '';
             histogramElement.style.height = '100px';
-            histogramElement.style.width = 'max(50%, 500px)';
+            histogramElement.style.minWidth = '50%';
             histogramElementR.style.height = '';
             histogramElementR.style.width = '';
             histogramElementG.style.height = '';
@@ -1338,11 +1368,11 @@
             histogramElement.style.height = '';
             histogramElement.style.width = '';
             histogramElementR.style.height = '100px';
-            histogramElementR.style.width = 'max(50%, 500px)';
+            histogramElementR.style.minWidth = '50%';
             histogramElementG.style.height = '100px';
-            histogramElementG.style.width = 'max(50%, 500px)';
+            histogramElementG.style.minWidth = '50%';
             histogramElementB.style.height = '100px';
-            histogramElementB.style.width = 'max(50%, 500px)';
+            histogramElementB.style.minWidth = '50%';
             setTimeout(() => {
                 const computedStyle = window.getComputedStyle(histogramElementR);
                 let computedWidth = computedStyle.width;
