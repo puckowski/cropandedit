@@ -564,7 +564,7 @@
 
         body {
             font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Fira Sans', 'Droid Sans', 'Helvetica Neue', 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif;
-            padding: 16px 16px;
+            padding: 8px 16px 16px 16px;
             word-wrap: break-word;
             color: var(--foreground500);
             background: var(--background500);
@@ -1195,6 +1195,23 @@
                 imageDataSetAfterDrag = true;
             }
         };
+
+        canvas.addEventListener('mouseleave', function (e) {
+            // If currently dragging, clear the overlay and stop dragging
+            if (isDragging) {
+                isDragging = false;
+                const overlayCtx = overlayCanvas.getContext('2d', { willReadFrequently: true });
+                overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+            }
+        });
+
+        canvas.addEventListener('touchcancel', function (e) {
+            if (isDragging) {
+                isDragging = false;
+                const overlayCtx = overlayCanvas.getContext('2d', { willReadFrequently: true });
+                overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+            }
+        });
 
         function adjustMouseCoordinates(e) {
             let mouseX = e.offsetX;
