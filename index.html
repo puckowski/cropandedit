@@ -613,6 +613,10 @@
 </head>
 
 <body>
+    <!-- New dimensions label container -->
+    <div style="text-align: center; margin-bottom: 10px;">
+        <span id="imageDimensionsLabel"></span>
+    </div>
     <div class="canvas-container">
         <canvas id="canvas"></canvas>
     </div>
@@ -678,6 +682,12 @@
         let img2 = new Image();
         img.src = 'castle1.png'; // Replace with the path to your image
         img2.src = 'castle1.png'; // Ensure img2 loads the same initial image
+
+        // Helper function to update image dimensions label
+        function updateImageDimensionsLabel() {
+            const label = document.getElementById('imageDimensionsLabel');
+            label.textContent = canvas.width + " x " + canvas.height + " px";
+        }
 
         // Global variables to track transformations
         let angle = 0;
@@ -766,6 +776,9 @@
             // Compute scaling factor for coordinate adjustments
             canvasToImageScale = img.width / canvas.width;
 
+            // Update the dimensions label
+            updateImageDimensionsLabel();
+
             addOverlay();
         };
 
@@ -796,6 +809,9 @@
 
                         // Update the scaling factor for coordinate adjustments
                         canvasToImageScale = img.width / canvas.width;
+
+                        // Update the dimensions label whenever a new image is uploaded
+                        updateImageDimensionsLabel();
 
                         addOverlay();
                     };
@@ -1290,7 +1306,7 @@
                 return;
             }
             imageData = ctx.getImageData(x, y, width, height);
-            computeHistogram(this.checked);
+            computeHistogram(document.getElementById('histogramToggle').checked);
         }
 
         function computeHistogram(isColor = false) {
