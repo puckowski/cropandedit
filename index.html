@@ -547,6 +547,7 @@
             --background550: rgb(29, 29, 29);
             --background600: rgb(29, 29, 29);
             --background700: rgb(29, 29, 29);
+            --background800: rgb(45, 45, 45);
             --primary500: #0172ad;
             --primary600: #014a85;
             --secondary500: #ffe1a8;
@@ -569,7 +570,7 @@
             color: var(--foreground500);
             background: var(--background500);
             text-rendering: optimizeLegibility;
-            background: rgb(45, 45, 45);
+            background: var(--background800);
         }
 
         .tools-container {
@@ -648,6 +649,10 @@
         <label>
             <input type="checkbox" id="histogramToggle" onchange="computeHistogram(this.checked)">
             Show Color Histogram
+        </label>
+        <label>
+            <input type="checkbox" id="themeToggle" style="margin-left: 10px" onchange="toggleTheme(this.checked)">
+            Light Mode
         </label>
     </div>
 
@@ -1324,6 +1329,26 @@
             }
             imageData = ctx.getImageData(x, y, width, height);
             computeHistogram(document.getElementById('histogramToggle').checked);
+        }
+
+        function toggleTheme(isLight = false) {
+            if (isLight) {
+                document.documentElement.style.setProperty('--foreground500', 'rgb(29, 29, 29)');
+                document.documentElement.style.setProperty('--foreground600', 'rgb(29, 29, 29)');
+                document.documentElement.style.setProperty('--background500', '#7a7a7a');
+                document.documentElement.style.setProperty('--background550', '#7a7a7a');
+                document.documentElement.style.setProperty('--background600', '#7a7a7a');
+                document.documentElement.style.setProperty('--background700', '#7a7a7a');
+                document.documentElement.style.setProperty('--background800', '#fafafa');
+            } else {
+                document.documentElement.style.setProperty('--foreground500', '#7a7a7a');
+                document.documentElement.style.setProperty('--foreground600', '#7a7a7a');
+                document.documentElement.style.setProperty('--background500', 'rgb(29, 29, 29)');
+                document.documentElement.style.setProperty('--background550', 'rgb(29, 29, 29)');
+                document.documentElement.style.setProperty('--background600', 'rgb(29, 29, 29)');
+                document.documentElement.style.setProperty('--background700', 'rgb(29, 29, 29)');
+                document.documentElement.style.setProperty('--background800', 'rgb(45, 45, 45)');
+            }
         }
 
         function computeHistogram(isColor = false) {
