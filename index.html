@@ -1349,6 +1349,8 @@
                 document.documentElement.style.setProperty('--background700', 'rgb(29, 29, 29)');
                 document.documentElement.style.setProperty('--background800', 'rgb(45, 45, 45)');
             }
+
+            localStorage.setItem('theme', isLight ? 'light' : 'dark');
         }
 
         function computeHistogram(isColor = false) {
@@ -1471,6 +1473,9 @@
                 });
             }, 0);
         }
+
+        localStorage.getItem('theme') === 'light' ? toggleTheme(true) : toggleTheme(false);
+        document.getElementById('themeToggle').checked = localStorage.getItem('theme') === 'light';
     </script>
 </body>
 
