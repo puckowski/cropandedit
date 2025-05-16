@@ -3,6 +3,8 @@
 
 <head>
     <title>Crop and Edit</title>
+    <script src="./tfjs.js"></script>
+    <script src="./coco.js"></script>
     <style>
         canvas {
             border: 1px solid black;
@@ -654,7 +656,12 @@
             <input type="checkbox" id="themeToggle" style="margin-left: 10px" onchange="toggleTheme(this.checked)">
             Light Mode
         </label>
+        <button id="autoCropBtn">Auto Crop</button>
     </div>
+    </div>
+    <div id="cropPreviews" style="display:flex; gap:8px; flex-wrap: wrap; margin-top:10px;"></div>
+    </div>
+
 
     <div class="histogram-container">
         <div id="histogram"></div>
@@ -741,6 +748,96 @@
             };
             offScreenImage.src = state.offScreenDataURL;
         }
+
+        let cocoModelPromise = cocoSsd.load();
+
+        document.getElementById('autoCropBtn').addEventListener('click', async () => {
+            const model = await cocoModelPromise;
+            const detections = await model.detect(offScreenCanvas);
+
+            const previewsContainer = document.getElementById('cropPreviews');
+            previewsContainer.innerHTML = '';
+
+            const MAX_PREVIEW = 256;
+
+            detections.forEach(det => {
+                const { bbox, class: label } = det;
+                const [x, y, w, h] = bbox.map(v => Math.round(v));
+
+                // calculate thumbnail size (max 256x256, keep aspect)
+                const scale = Math.min(MAX_PREVIEW / w, MAX_PREVIEW / h, 1);
+                const thumbW = Math.round(w * scale);
+                const thumbH = Math.round(h * scale);
+
+                // build the preview canvas
+                const thumb = document.createElement('canvas');
+                thumb.width = thumbW;
+                thumb.height = thumbH;
+                thumb.style.border = '1px solid #666';
+                thumb.style.cursor = 'pointer';
+                thumb.title = label;
+                const tctx = thumb.getContext('2d');
+
+                // draw the region into the thumb, scaled down
+                tctx.drawImage(
+                    offScreenCanvas,
+                    x, y, w, h,
+                    0, 0, thumbW, thumbH
+                );
+
+                const wrapper = document.createElement('div');
+                wrapper.style.textAlign = 'center';
+                wrapper.style.fontSize = '0.8em';
+                wrapper.style.color = '#fff';
+                wrapper.style.background = 'rgba(0,0,0,0.5)';
+                wrapper.style.borderRadius = '4px';
+                wrapper.style.overflow = 'hidden';
+                wrapper.appendChild(thumb);
+                const lbl = document.createElement('div');
+                lbl.textContent = label;
+                wrapper.appendChild(lbl);
+
+                wrapper.addEventListener('click', () => {
+                    saveState();  // push undo
+
+                    // set your main canvas to the full-resolution crop
+                    canvas.width = w;
+                    canvas.height = h;
+                    canvasToImageScale = 1;     // now canvas is 1:1 with offScreenCanvas
+
+                    ctx.clearRect(0, 0, w, h);
+                    ctx.drawImage(
+                        offScreenCanvas,
+                        x, y, w, h,
+                        0, 0, w, h
+                    );
+
+                    // update your off-screen to the same region so further edits operate on full-res
+                    offScreenCanvas.width = w;
+                    offScreenCanvas.height = h;
+                    offScreenCtx.clearRect(0, 0, w, h);
+                    offScreenCtx.drawImage(
+                        offScreenCanvas /* original source? keep a copy of full source image */,
+                        x, y, w, h,
+                        0, 0, w, h
+                    );
+
+                    // update the image srcs and dimensions label
+                    img.src = canvas.toDataURL();
+                    img2.src = offScreenCanvas.toDataURL();
+                    updateImageDimensionsLabel();
+
+                    previewsContainer.innerHTML = '';
+                });
+
+                previewsContainer.appendChild(wrapper);
+            });
+
+            if (detections.length === 0) {
+                previewsContainer.textContent = 'No objects detected.';
+            }
+        });
+
 
         document.getElementById('clearSelectionBtn').addEventListener('click', function () {
             if (overlayCanvas) {
