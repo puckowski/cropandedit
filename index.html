@@ -318,7 +318,7 @@
         input[type=range] {
             -webkit-appearance: none;
             background: 0 0;
-            width: 35rem;
+            width: 20rem;
             vertical-align: middle;
         }
 
@@ -675,14 +675,19 @@
             <input type="range" id="toleranceSlider" min="0" max="100" value="20">
             <span id="toleranceLabel">20%</span>
         </label>
+        <button id="pickSColorBtn" type="button">Pick Source Color</button>
+        <button id="pickTColorBtn" type="button">Pick Target Color</button>
     </div>
     <div class="tools-container">
         <div id="legends" style="visibility: hidden;"></div>
     </div>
-    <div id="segmentationPreviews" style="display:flex; gap:8px; flex-wrap: wrap; margin-top:10px;"></div>
-
+    <div class="tools-container">
+        <div id="segmentationPreviews" style="display:flex; gap:8px; flex-wrap: wrap; margin-top:10px;"></div>
     </div>
-    <div id="cropPreviews" style="display:flex; gap:8px; flex-wrap: wrap; margin-top:10px;"></div>
+    <div class="tools-container">
+        <div id="cropPreviews" style="display:flex; gap:8px; flex-wrap: wrap; margin-top:10px;"></div>
+    </div>
+    </div>
     </div>
 
 
@@ -722,9 +727,46 @@
             label.textContent = canvas.width + " x " + canvas.height + " px";
         }
 
+        window.addEventListener('resize', () => {
+            if (!overlayCanvas || !canvas) return;
+
+            // Match overlay size to canvas display size
+            const rect = canvas.getBoundingClientRect();
+
+            overlayCanvas.style.top = rect.top + 'px';
+            overlayCanvas.style.left = rect.left + 'px';
+            overlayCanvas.style.width = rect.width + 'px';
+            overlayCanvas.style.height = rect.height + 'px';
+        });
+
         let angle = 0;
         let isFlippedHorizontally = false;
         let isFlippedVertically = false;
+
+        const pickSColorBtn = document.getElementById('pickSColorBtn');
+        const sourceColorPicker = document.getElementById('sourceColorPicker');
+        let pickColorMode = false;
+
+        function rgbToHex(r, g, b) {
+            return "#" + [r, g, b]
+                .map(c => c.toString(16).padStart(2, '0'))
+                .join('');
+        }
+
+        pickSColorBtn.addEventListener('click', () => {
+            pickColorMode = !pickColorMode;
+            canvas.style.cursor = pickColorMode ? 'crosshair' : 'default';
+            pickSColorBtn.textContent = pickColorMode ? 'Cancel Pick' : 'Pick Color';
+        });
+
+        const pickTColorBtn = document.getElementById('pickTColorBtn');
+        const targetColorPicker = document.getElementById('targetColorPicker');
+
+        pickTColorBtn.addEventListener('click', () => {
+            pickColorMode = !pickColorMode;
+            canvas.style.cursor = pickColorMode ? 'crosshair' : 'default';
+            pickTColorBtn.textContent = pickColorMode ? 'Cancel Pick' : 'Pick Color';
+        });
 
         const toleranceSlider = document.getElementById('toleranceSlider');
         const toleranceLabel = document.getElementById('toleranceLabel');
@@ -734,6 +776,29 @@
 
         toleranceSlider.addEventListener('input', () => {
             toleranceLabel.textContent = toleranceSlider.value + '%';
+        });
+
+        canvas.addEventListener('click', e => {
+            if (!pickColorMode) return;
+
+            const rect = canvas.getBoundingClientRect();
+            const x = Math.floor(e.clientX - rect.left);
+            const y = Math.floor(e.clientY - rect.top);
+
+            const [r, g, b] = ctx.getImageData(x, y, 1, 1).data;
+
+            const hex = rgbToHex(r, g, b);
+
+            pickColorMode = false;
+            canvas.style.cursor = 'default';
+
+            if (pickSColorBtn.textContent === 'Cancel Pick') {
+                pickSColorBtn.textContent = 'Pick Color';
+                sourceColorPicker.value = hex;
+            } else {
+                pickTColorBtn.textContent = 'Pick Color';
+                targetColorPicker.value = hex;
+            }
         });
 
         const MAX_COLOR_DIST = Math.sqrt(3 * 255 * 255);
@@ -780,8 +845,8 @@
 
                 const preview = document.createElement('canvas');
                 preview.width = w; preview.height = h;
-                preview.style.width = '100px';
-                preview.style.height = '100px';
+                preview.style.width = '180px';
+                preview.style.height = '180px';
                 const pctx = preview.getContext('2d');
                 const pd = pctx.createImageData(w, h);
 
