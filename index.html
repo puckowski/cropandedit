@@ -3,8 +3,12 @@
 
 <head>
     <title>Crop and Edit</title>
-    <script src="./tfjs.js"></script>
+    <script src="./tf-core.js"></script>
+    <script src="./tf-webgl.js"></script>
+    <script src="./tf-converter.js"></script>
     <script src="./coco.js"></script>
+    <script src="./deep.js"></script>
+
     <style>
         canvas {
             border: 1px solid black;
@@ -658,6 +662,25 @@
         </label>
         <button id="autoCropBtn">Auto Crop</button>
     </div>
+
+    <div class="tools-container">
+        <button id="segmentButton" disabled>Segment Image</button>
+        <label>Source Color:
+            <input type="color" id="sourceColorPicker" value="#ff0000">
+        </label>
+        <label>Target Color:
+            <input type="color" id="targetColorPicker" value="#00ff00">
+        </label>
+        <label>Tolerance:
+            <input type="range" id="toleranceSlider" min="0" max="100" value="20">
+            <span id="toleranceLabel">20%</span>
+        </label>
+    </div>
+    <div class="tools-container">
+        <div id="legends" style="visibility: hidden;"></div>
+    </div>
+    <div id="segmentationPreviews" style="display:flex; gap:8px; flex-wrap: wrap; margin-top:10px;"></div>
+
     </div>
     <div id="cropPreviews" style="display:flex; gap:8px; flex-wrap: wrap; margin-top:10px;"></div>
     </div>
@@ -677,12 +700,11 @@
         let imageDataSetAfterDrag = false;
         let overlayCanvas;
         let histCoords;
-        let canvasToImageScale = 1; // Scaling factor from canvas to original image dimensions
+        let canvasToImageScale = 1;
 
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d', { willReadFrequently: true });
 
-        // Create an off-screen canvas for img2
         const offScreenCanvas = document.createElement('canvas');
         const offScreenCtx = offScreenCanvas.getContext('2d', { willReadFrequently: true });
 
@@ -692,19 +714,196 @@
         const histogramElementB = document.getElementById('histogramb');
         let img = new Image();
         let img2 = new Image();
-        img.src = 'castle1.png'; // Replace with the path to your image
-        img2.src = 'castle1.png'; // Ensure img2 loads the same initial image
+        img.src = 'castle1.png';
+        img2.src = 'castle1.png';
 
-        // Helper function to update image dimensions label
         function updateImageDimensionsLabel() {
             const label = document.getElementById('imageDimensionsLabel');
             label.textContent = canvas.width + " x " + canvas.height + " px";
         }
 
-        // Global variables to track transformations
         let angle = 0;
         let isFlippedHorizontally = false;
         let isFlippedVertically = false;
+
+        const toleranceSlider = document.getElementById('toleranceSlider');
+        const toleranceLabel = document.getElementById('toleranceLabel');
+
+        let latestSegMap = null;
+        let selectedClassId = null;
+
+        toleranceSlider.addEventListener('input', () => {
+            toleranceLabel.textContent = toleranceSlider.value + '%';
+        });
+
+        const MAX_COLOR_DIST = Math.sqrt(3 * 255 * 255);
+
+        function getThreshold() {
+            const pct = parseFloat(toleranceSlider.value) / 100;
+            return MAX_COLOR_DIST * pct;
+        }
+
+        const segmentImageButton = document.getElementById("segmentButton");
+        const legendsDiv = document.getElementById("legends");
+
+        async function predictSegments() {
+            prediction = await model.segment(img);
+
+            renderPrediction(prediction);
+        }
+
+        async function renderPrediction(prediction) {
+            const { legend, height, width, segmentationMap } = prediction;
+
+            const originalCanvas = document.createElement('canvas');
+            const octx = originalCanvas.getContext('2d');
+            originalCanvas.width = width; originalCanvas.height = height;
+            octx.drawImage(img, 0, 0, width, height);
+            const originalImageData = octx.getImageData(0, 0, width, height);
+
+            displayPreviewsAndLegends(legend, segmentationMap, originalImageData);
+        }
+
+        function displayPreviewsAndLegends(legendObj, segmentationMap, originalImageData) {
+            latestSegMap = {
+                data: segmentationMap,
+                width: originalImageData.width,
+                height: originalImageData.height
+            };
+
+            while (legendsDiv.firstChild) legendsDiv.removeChild(legendsDiv.firstChild);
+
+            Object.keys(legendObj).forEach(label => {
+                const classId = Number(label);
+                const [r, g, b] = legendObj[label];
+                const w = originalImageData.width, h = originalImageData.height;
+
+                const preview = document.createElement('canvas');
+                preview.width = w; preview.height = h;
+                preview.style.width = '100px';
+                preview.style.height = '100px';
+                const pctx = preview.getContext('2d');
+                const pd = pctx.createImageData(w, h);
+
+                for (let i = 0; i < segmentationMap.length; i += 4) {
+                    if (segmentationMap[i] === r &&
+                        segmentationMap[i + 1] === g &&
+                        segmentationMap[i + 2] === b) {
+
+                        pd.data[i] = originalImageData.data[i];
+                        pd.data[i + 1] = originalImageData.data[i + 1];
+                        pd.data[i + 2] = originalImageData.data[i + 2];
+                        pd.data[i + 3] = originalImageData.data[i + 3];
+                    } else {
+                        pd.data[i] = 0;
+                        pd.data[i + 1] = 0;
+                        pd.data[i + 2] = 0;
+                        pd.data[i + 3] = 255;
+                    }
+                }
+                pctx.putImageData(pd, 0, 0);
+
+                const wrapper = document.createElement('div');
+                wrapper.style.display = 'inline-block';
+                wrapper.style.margin = '5px';
+                wrapper.style.textAlign = 'center';
+
+                const text = document.createElement('div');
+                text.innerText = label;
+                text.style.marginTop = '4px';
+                text.style.fontSize = '0.9em';
+
+                wrapper.appendChild(preview);
+                wrapper.appendChild(text);
+
+                wrapper.addEventListener('click', () => {
+                    Array.from(legendsDiv.children).forEach(c => c.style.border = '2px solid transparent');
+                    wrapper.style.border = '2px solid #0f0';
+
+                    const srcRGB = hexToRgb(sourceColorPicker.value);
+                    const tgtRGB = hexToRgb(targetColorPicker.value);
+                    const pct = parseFloat(toleranceSlider.value) / 100;     // 0–1
+                    const perThresh = 255 * pct;
+
+                    const mask = latestSegMap.data;
+                    const maskW = latestSegMap.width, maskH = latestSegMap.height;
+                    const dispW = canvas.width, dispH = canvas.height;
+                    const scaleX = dispW / maskW, scaleY = dispH / maskH;
+
+                    const dispImg = ctx.getImageData(0, 0, dispW, dispH);
+                    const d = dispImg.data;
+
+                    for (let y = 0; y < dispH; y++) {
+                        for (let x = 0; x < dispW; x++) {
+                            const di = (y * dispW + x) * 4;
+
+                            const mx = Math.floor(x / scaleX);
+                            const my = Math.floor(y / scaleY);
+                            const mi = (my * maskW + mx) * 4;
+
+                            if (
+                                mask[mi] === r &&
+                                mask[mi + 1] === g &&
+                                mask[mi + 2] === b
+                            ) {
+                                const pr = d[di], pg = d[di + 1], pb = d[di + 2];
+                                const dr = pr - srcRGB.r;
+                                const dg = pg - srcRGB.g;
+                                const db = pb - srcRGB.b;
+
+                                if (
+                                    Math.abs(dr) <= perThresh &&
+                                    Math.abs(dg) <= perThresh &&
+                                    Math.abs(db) <= perThresh
+                                ) {
+                                    const fr = 1 - (Math.abs(dr) / perThresh);
+                                    const fg = 1 - (Math.abs(dg) / perThresh);
+                                    const fb = 1 - (Math.abs(db) / perThresh);
+
+                                    d[di] = Math.round(pr + fr * (tgtRGB.r - pr));
+                                    d[di + 1] = Math.round(pg + fg * (tgtRGB.g - pg));
+                                    d[di + 2] = Math.round(pb + fb * (tgtRGB.b - pb));
+                                }
+                            }
+                        }
+                    }
+
+                    ctx.putImageData(dispImg, 0, 0);
+
+                    overlayCanvas.width = canvas.width;
+                    overlayCanvas.height = canvas.height;
+                    overlayCanvas.getContext('2d').clearRect((0, 0), canvas.width, canvas.height);
+
+                    wrapper.style.border = '2px solid transparent';
+                });
+
+                legendsDiv.appendChild(wrapper);
+            });
+
+            legendsDiv.style.visibility = 'visible';
+        }
+
+        function hexToRgb(hex) {
+            const m = hex.match(/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i);
+            return m && {
+                r: parseInt(m[1], 16),
+                g: parseInt(m[2], 16),
+                b: parseInt(m[3], 16)
+            };
+        }
+
+        function colorDistance(r, g, b, { r: sr, g: sg, b: sb }) {
+            return Math.hypot(r - sr, g - sg, b - sb);
+        }
+
+        segmentImageButton.onclick = predictSegments;
+        segmentImageButton.disabled = true;
+        loadModel();
+        segmentImageButton.disabled = false;
+
+        async function loadModel() {
+            model = await deeplab.load({ "base": 'pascal', "quantizationBytes": 2 });
+        }
 
         // Undo stack (stores up to 10 previous states)
         let undoStack = [];
@@ -1569,6 +1768,19 @@
                     histogramElementB.appendChild(bar);
                 });
             }, 0);
+        }
+
+        // helpers
+        function hexToRgb(hex) {
+            const m = hex.match(/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i);
+            return m ? {
+                r: parseInt(m[1], 16),
+                g: parseInt(m[2], 16),
+                b: parseInt(m[3], 16)
+            } : null;
+        }
+        function colorDistance(r, g, b, { r: sr, g: sg, b: sb }) {
+            return Math.hypot(r - sr, g - sg, b - sb);
         }
 
         localStorage.getItem('theme') === 'light' ? toggleTheme(true) : toggleTheme(false);
