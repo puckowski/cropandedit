@@ -933,11 +933,15 @@
                         }
                     }
 
+                    offScreenCtx.putImageData(dispImg, 0, 0);
+                    img2.src = offScreenCanvas.toDataURL();
+
                     ctx.putImageData(dispImg, 0, 0);
+                    img.src = canvas.toDataURL();
 
                     overlayCanvas.width = canvas.width;
                     overlayCanvas.height = canvas.height;
-                    overlayCanvas.getContext('2d').clearRect((0, 0), canvas.width, canvas.height);
+                    overlayCanvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
 
                     wrapper.style.border = '2px solid transparent';
                 });
@@ -1547,7 +1551,7 @@
                 spraying = false;
                 clearInterval(sprayInterval);
                 saveState();
-            } else {
+            } else if (!pickColorMode) {
                 isDragging = false;
                 let { mouseX, mouseY } = adjustMouseCoordinates(e);
                 const width = mouseX - startX;
