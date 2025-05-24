@@ -1556,6 +1556,9 @@
                 let { mouseX, mouseY } = adjustMouseCoordinates(e);
                 const width = mouseX - startX;
                 const height = mouseY - startY;
+                if (width === 0 || height === 0) {
+                    return;
+                }
                 histCoords = { startX, startY, width, height };
                 scaledStartX = Math.round(startX * canvasToImageScale);
                 scaledStartY = Math.round(startY * canvasToImageScale);
