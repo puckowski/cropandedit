@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+
+<body>
+    <input type="file" id="fileInput" accept="image/*">
+    <br>
+    <img id="imgPreview" src="" alt="Image preview" style="max-width:200px; display:none;">
+    <br>
+    <button id="paceBtn">Is it Pace?</button>
+    <div id="result"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+    <script>
+        let model;
+
+        // Load model once on page load
+        (async function () {
+            model = await tf.loadGraphModel('my_dog_model_2/model.json');
+            console.log("Model loaded!");
+        })();
+
+        // Handle file input and preview
+        let imgElement = document.getElementById('imgPreview');
+        let uploadedImage = null;
+
+        document.getElementById('fileInput').addEventListener('change', function (e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function (event) {
+                imgElement.src = event.target.result;
+                imgElement.style.display = "block";
+                uploadedImage = imgElement;
+            };
+            reader.readAsDataURL(file);
+        });
+
+        async function predictImage(img) {
+            let tensor = tf.browser.fromPixels(img);
+            tensor = tf.image.resizeBilinear(tensor, [128, 128]);
+            tensor = tf.cast(tensor, 'float32');
+            tensor = tf.div(tensor, tf.scalar(255));
+            tensor = tf.expandDims(tensor, 0);
+
+            const prediction = model.predict(tensor);
+            const prob = (await prediction.data())[0];
+            document.getElementById('result').innerText =
+                `Confidence this is similar to dog_crops: ${(prob * 100).toFixed(2)}%`;
+        }
+
+        document.getElementById('paceBtn').addEventListener('click', async function () {
+            if (!uploadedImage) {
+                document.getElementById('result').innerText = "Please upload an image first.";
+                return;
+            }
+            await predictImage(uploadedImage);
+        });
+    </script>
+</body>
+
+</html>
