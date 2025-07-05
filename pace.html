@@ -50,7 +50,7 @@
             const prediction = model.predict(tensor);
             const prob = (await prediction.data())[0];
             document.getElementById('result').innerText =
-                `Confidence this is similar to dog_crops: ${(prob * 100).toFixed(2)}%`;
+                `Confidence this is similar to Patience: ${(prob * 100).toFixed(2)}%`;
         }
 
         document.getElementById('paceBtn').addEventListener('click', async function () {
